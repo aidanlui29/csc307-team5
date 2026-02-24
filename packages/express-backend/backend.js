@@ -1,116 +1,73 @@
-// backend.js
-import express from "express";
-import cors from "cors";
-import userService from "./services/user-service.js";
 import dotenv from "dotenv";
-import mongoose from "mongoose";
+// This forces dotenv to load the .env next to this file (bulletproof)
+dotenv.config({ path: new URL("./.env", import.meta.url) });
 
-// const users = {
-//   users_list: [
-//     {
-//       id: "xyz789",
-//       name: "Charlie",
-//       job: "Janitor"
-//     },
-//     {
-//       id: "abc123",
-//       name: "Mac",
-//       job: "Bouncer"
-//     },
-//     {
-//       id: "ppp222",
-//       name: "Mac",
-//       job: "Professor"
-//     },
-//     {
-//       id: "yat999",
-//       name: "Dee",
-//       job: "Aspring actress"
-//     },
-//     {
-//       id: "zap555",
-//       name: "Dennis",
-//       job: "Bartender"
-//     }
-//   ]
-// };
-
-dotenv.config();
-
-const { MONGO_CONNECTION_STRING } = process.env;
-
-mongoose.set("debug", true);
-mongoose
-  .connect(MONGO_CONNECTION_STRING + "users") // connect to DB 'users'
-  .catch((error) => console.log(error));
+import express from "express";
+import bcrypt from "bcrypt";
+import { connectDb } from "./db.js";
+import { User } from "./models/user.js";
 
 const app = express();
-const port = 8000;
-
-app.use(cors());
-
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("Hello World!");
+app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+// SIGNUP
+app.post("/api/auth/signup", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).send("Missing email or password");
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const existing = await User.findOne({ email: normalizedEmail });
+    if (existing) return res.status(409).send("Email already in use");
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const user = await User.create({ email: normalizedEmail, passwordHash });
+    res.status(201).json({ id: user._id.toString(), email: user.email });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
 });
 
-app.get("/users", (req, res) => {
-  const { name, job } = req.query;
-  userService
-    .getUsers(name, job)
-    .then((result) => {
-      res.send({ users_list: result });
-    })
-    .catch((error) => {
-      res.status(500).send(error);
-    });
+// LOGIN
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).send("Missing email or password");
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) return res.status(401).send("Invalid credentials");
+
+    const ok = await bcrypt.compare(password, user.passwordHash);
+    if (!ok) return res.status(401).send("Invalid credentials");
+
+    // For now: just confirm success (we'll add JWT next)
+    res.json({ ok: true, id: user._id.toString(), email: user.email });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
 });
 
-app.get("/users/:id", (req, res) => {
-  const id = req.params.id; // or req.params["id"]
+const port = process.env.PORT || 3001;
 
-  userService.findUserById(id).then((result) => {
-    if (result) {
-      res.send(result);
-    } else {
-      res.status(404).send(`Not found: ${id}`);
+async function start() {
+  try {
+    if (!process.env.MONGODB_URI) {
+      throw new Error("MONGODB_URI is missing. Check packages/express-backend/.env");
     }
-  });
-});
+    await connectDb();
+    app.listen(port, () => console.log(`Server running on ${port}`));
+  } catch (err) {
+    console.error("Failed to start:", err);
+    process.exit(1);
+  }
+}
 
-app.post("/users", (req, res) => {
-  const userToAdd = req.body;
-
-  userService
-    .addUser(userToAdd)
-    .then((result) => {
-      res.status(201).send(result); // Content created
-    })
-    .catch((error) => {
-      res.status(500).send(error);
-    });
-});
-
-app.delete("/users/:id", (req, res) => {
-  const id = req.params.id;
-
-  userService
-    .findByIdAndDelete(id)
-    .then((user) => {
-      if (user) {
-        res.status(204).send(user); // No content
-      } else {
-        res.status(404).send(`Not found: ${id}`);
-      }
-    })
-    .catch((error) => {
-      res.status(500).send(error);
-    });
-});
-
-app.listen(port, () => {
-  console.log(
-    `Example app listening at http://localhost:${port}`
-  );
-});
+start();

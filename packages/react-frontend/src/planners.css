@@ -1,0 +1,147 @@
+.plannersPage {
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+.plannersTopBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px;
+}
+
+.menuBtn {
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.searchWrap {
+  position: relative;
+  width: min(620px, 70vw);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.6;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px 14px 12px 40px;
+  border: none;
+  background: #f3f4f6;
+  border-radius: 8px;
+  outline: none;
+}
+
+.plannersMain {
+  display: flex;
+  gap: 36px;
+  padding: 10px 22px 30px;
+  align-items: flex-start;
+}
+
+/* Left */
+.tilesArea {
+  flex: 1;
+  padding-top: 30px;
+}
+
+.tilesGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+}
+
+/* ✅ Square with curved edges */
+.plannerTile {
+  width: 240px;
+  height: 240px;
+  border-radius: 28px;
+  border: none;
+  background: #e5e7eb;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.plannerTile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
+}
+
+.createTile {
+  background: #9ca3af;
+}
+
+.plus {
+  font-size: 64px;
+  font-weight: 600;
+  line-height: 1;
+  color: #111827;
+}
+
+/* Right */
+.rightPanels {
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  padding-top: 20px;
+}
+
+.panelCard {
+  background: #d1d5db;
+  border-radius: 10px;
+  padding: 18px 18px 14px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.25);
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.panelHeader h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.panelTotal {
+  font-weight: 600;
+  color: #1d4ed8;
+}
+
+.panelList {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-top: 6px;
+}
+
+.panelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rowTitle {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.rowMeta {
+  font-weight: 600;
+  color: #1d4ed8;
+}

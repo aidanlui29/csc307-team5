@@ -1,57 +1,31 @@
 // services/user-service.js
-import mongoose from "mongoose";
-import userModel from "../models/user.js";
+import bcrypt from "bcrypt";
+import { User } from "../models/user.js";
 
-mongoose.set("debug", true);
+async function createUser(email, password) {
+  const normalizedEmail = email.toLowerCase().trim();
 
-mongoose
-  .connect("mongodb://localhost:27017/users", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  })
-  .catch((error) => console.log(error));
-
-function getUsers(name, job) {
-  let promise;
-  if (name === undefined && job === undefined) {
-    promise = userModel.find();
-  } else if (name && !job) {
-    promise = findUserByName(name);
-  } else if (job && !name) {
-    promise = findUserByJob(job);
-  } else if (name && job) {
-    promise = userModel.find({ name: name, job: job });
+  const existing = await User.findOne({ email: normalizedEmail });
+  if (existing) {
+    const err = new Error("Email already in use");
+    err.code = "EMAIL_EXISTS";
+    throw err;
   }
-  return promise;
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const user = await User.create({ email: normalizedEmail, passwordHash });
+
+  return { id: user._id.toString(), email: user.email };
 }
 
-function findUserById(id) {
-  return userModel.findById(id);
+function findUserByEmail(email) {
+  if (!email) return null;
+  return User.findOne({ email: email.toLowerCase().trim() });
 }
 
-function addUser(user) {
-  const userToAdd = new userModel(user);
-  const promise = userToAdd.save();
-  return promise;
+async function validatePassword(userDoc, password) {
+  if (!userDoc) return false;
+  return bcrypt.compare(password, userDoc.passwordHash);
 }
 
-function findUserByName(name) {
-  return userModel.find({ name: name });
-}
-
-function findUserByJob(job) {
-  return userModel.find({ job: job });
-}
-
-function findByIdAndDelete(id) {
-  return userModel.findByIdAndDelete(id);
-}
-
-export default {
-  addUser,
-  getUsers,
-  findUserById,
-  findUserByName,
-  findUserByJob,
-  findByIdAndDelete
-};
+export default { createUser, findUserByEmail, validatePassword };
