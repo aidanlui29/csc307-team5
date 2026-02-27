@@ -1,0 +1,549 @@
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  
+  .planner {
+    background: #111;
+    min-height: 100vh;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: white;
+  }
+  
+  /* Top Bar */
+  .planner__topbar {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: #eaeaea;
+    color: #333;
+    z-index: 20;
+  }
+  
+  .planner__left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  
+  .planner__menu {
+    font-size: 18px;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  
+  .planner__nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .planner__navbtn {
+    background: #f6f6f6;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    height: 32px;
+    min-width: 44px;
+    padding: 0 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .planner__monthTitle {
+    font-weight: 800;
+    font-size: 18px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  
+  .planner__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+  
+  .planner__add {
+    background: #ff2e2e;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 20px;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  
+  .planner__focus {
+    background: #1db954;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 20px;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  
+  /* Scroll area */
+  .planner__scrollArea {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: auto;
+  }
+  
+  /* Grid */
+  .planner__gridwrap {
+    position: relative;
+    min-width: 900px;
+  }
+  
+  .planner__header,
+  .planner__row {
+    display: grid;
+    grid-template-columns: 110px repeat(7, 1fr);
+  }
+  
+  /* Sticky header */
+  .planner__header {
+    position: sticky;
+    top: 0;
+    z-index: 50;             
+    background: #1c1c1c;     
+    box-shadow: 0 2px 0 rgba(255, 255, 255, 0.06);
+  }
+  
+  /* Header cells */
+  .planner__timecol {
+    background: #1c1c1c;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  
+  .planner__dayheader {
+    height: 58px;
+    padding: 8px 6px;
+    text-align: center;
+    background: #1c1c1c;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+  }
+  
+  .planner__daydate {
+    font-weight: 800;
+    font-size: 16px;
+    line-height: 1;
+  }
+  
+  .planner__dayname {
+    font-weight: 700;
+    font-size: 12px;
+    opacity: 0.85;
+  }
+  
+  /* Time labels */
+  .planner__time {
+    height: 60px;
+    border-right: 1px solid rgba(255, 255, 255, 0.10);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.70);
+    display: flex;
+    align-items: center;
+    padding-left: 16px;
+    font-size: 16px;
+    font-weight: 650;
+    box-sizing: border-box;
+  }
+  
+  /* Cells */
+  .planner__cell {
+    height: 60px;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  
+  /* Today highlight (solid, not transparent) */
+  .planner__dayheader--today {
+    background: #2a2a2a;
+  }
+  .planner__cell--today {
+    background: #171717;
+    box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.10),
+      inset -1px 0 0 rgba(255, 255, 255, 0.10);
+  }
+  
+  /* Now line */
+  .planner__nowLine {
+    position: absolute;
+    height: 2px;
+    background: #ff2e2e;
+    z-index: 25;              /* BELOW header (50) */
+    pointer-events: none;
+    box-shadow: 0 0 8px rgba(255, 46, 46, 0.35);
+  }
+  
+  /* Event blocks ("tabs") */
+  .planner__event {
+    position: absolute;
+    z-index: 20;              
+    border-radius: 10px;
+    padding: 10px 12px;
+    box-sizing: border-box;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-start;
+    cursor: pointer;
+  }
+  
+  .planner__eventTitle {
+    font-weight: 800;
+    font-size: 18px;
+    line-height: 1.1;
+    color: #ffffff;
+  }
+  
+  .planner__event--schedule {
+    background: #59d66a; /* green */
+  }
+  
+  .planner__event--task {
+    background: #9b5cff; /* purple */
+  }
+  
+  /* ---------- Modal ---------- */
+  .plannerModal {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+  }
+  
+  .plannerModal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+  }
+  
+  .plannerModal__card {
+    position: relative;
+  
+    /* bigger, responsive */
+    width: min(720px, calc(100vw - 48px));
+    margin: 90px auto;
+  
+    background: #ffffff;
+    color: #111;
+    border-radius: 22px;
+  
+    /* more breathing room so elements don't feel cramped */
+    padding: 22px 22px 18px;
+  
+    box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
+  }
+  
+  /* keep X clearly INSIDE the card */
+  .plannerModal__close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+  
+    width: 36px;
+    height: 36px;
+  
+    border: none;
+    background: transparent;
+  
+    font-size: 28px;
+    line-height: 1;
+  
+    display: grid;
+    place-items: center;
+  
+    cursor: pointer;
+  }
+  
+  .plannerModal__title {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: #e7e7e7;
+    border-radius: 10px;
+    padding: 12px 12px;
+    font-size: 20px;
+    font-weight: 700;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+  }
+  
+  .plannerModal__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 10px 0;
+  }
+  
+  .plannerModal__row--stack {
+    align-items: flex-end;
+    flex-wrap: nowrap; 
+    gap: 16px;
+  }
+  
+  .plannerModal__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #222;
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  
+  .plannerModal__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #7a0000;
+  }
+  
+  .plannerModal__toggle {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .plannerModal__pill {
+    border: none;
+    border-radius: 10px;
+    padding: 7px 14px;
+    cursor: pointer;
+    background: #e9e9e9;
+    font-weight: 800;
+    text-transform: lowercase;
+  }
+  
+  .plannerModal__pill.is-active.is-schedule {
+    background: #59d66a;
+    color: #0b2a10;
+  }
+  .plannerModal__pill.is-active.is-task {
+    background: #9b5cff;
+    color: #1b0833;
+  }
+  
+  .plannerModal__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+  }
+  
+  .plannerModal__field label {
+    font-size: 12px;
+    font-weight: 800;
+    opacity: 0.7;
+  }
+  
+  .plannerModal__field input,
+  .plannerModal__field textarea {
+    border: none;
+    outline: none;
+    background: #e7e7e7;
+    border-radius: 10px;
+    padding: 10px 10px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  
+  .plannerModal__field textarea {
+    resize: none;
+    min-height: 110px;
+  }
+  
+  .plannerModal__field--times {
+    flex: 1.6;
+    min-width: 340px;
+  }
+  
+  .plannerModal__times {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: nowrap;
+  }
+  .plannerModal__times input[type="time"] {
+    width: 160px; /* consistent size so it doesn’t overflow */
+  }
+  
+  .plannerModal__dash {
+    font-weight: 900;
+    opacity: 0.5;
+  }
+  
+  .plannerModal__error {
+    margin-top: 8px;
+    color: #b00020;
+    font-weight: 800;
+    font-size: 13px;
+  }
+  
+  .plannerModal__actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+  }
+  
+  .plannerModal__save {
+    background: #7bd2ff;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-weight: 900;
+    font-size: 18px;
+    cursor: pointer;
+  }
+  /* Popover like your screenshot */
+.plannerPopover {
+    position: absolute;
+    z-index: 40;            /* still below header (50), above events (20) */
+    background: #ffffff;
+    color: #111;
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 18px 55px rgba(0, 0, 0, 0.35);
+  }
+  
+  .plannerPopover__title {
+    background: #e0e0e0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-weight: 900;
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+  
+  .plannerPopover__desc {
+    background: #e0e0e0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-weight: 700;
+    opacity: 0.85;
+    min-height: 70px;
+  }
+  
+  .plannerPopover__actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  
+  .plannerPopover__iconBtn {
+    width: 42px;
+    height: 36px;
+    border: 2px solid #111;
+    background: #fff;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 900;
+    display: grid;
+    place-items: center;
+  }
+  
+  .plannerPopover__iconBtn--danger {
+    border-color: #111;
+  }
+  /* ---------- Focus Timer Modal ---------- */
+.focusModal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+  }
+  
+  .focusModal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+  }
+  
+  .focusModal__card {
+    position: relative;
+    width: 360px;
+    max-width: calc(100vw - 32px);
+    background: #9cc6f5;
+    border-radius: 22px;
+    padding: 18px 18px 22px;
+    margin: 140px auto;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
+  }
+  
+  .focusModal__top {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  
+  .focusModal__pill {
+    flex: 1;
+    border: none;
+    background: #2f60c7;
+    color: white;
+    padding: 10px 12px;
+    border-radius: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    opacity: 0.75;
+  }
+  
+  .focusModal__pill.is-active {
+    opacity: 1;
+  }
+  
+  .focusModal__circleWrap {
+    display: grid;
+    place-items: center;
+    padding: 10px 0 16px;
+  }
+  
+  .focusModal__circle {
+    width: 260px;
+    height: 260px;
+    border-radius: 999px;
+    border: 6px solid rgba(255, 255, 255, 0.55);
+    display: grid;
+    place-items: center;
+  }
+  
+  .focusModal__time {
+    font-size: 72px;
+    font-weight: 400;
+    color: white;
+    letter-spacing: 1px;
+  }
+  
+  .focusModal__btns {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+  }
+  
+  .focusModal__btn {
+    width: 170px;
+    border: none;
+    background: #072b6b;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 18px;
+    font-weight: 900;
+    font-size: 22px;
+    cursor: pointer;
+  }
