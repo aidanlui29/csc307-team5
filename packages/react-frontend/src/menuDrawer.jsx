@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { clearToken } from "./auth"; // ✅ added
 
 export default function MenuDrawer({ open, onClose }) {
   const location = useLocation();
@@ -14,7 +15,7 @@ export default function MenuDrawer({ open, onClose }) {
   }, [open, onClose]);
 
   function handleLogout() {
-    localStorage.removeItem("clockedInUser");
+    clearToken(); // ✅ changed (was removeItem("clockedInUser"))
     onClose();
     navigate("/login");
   }

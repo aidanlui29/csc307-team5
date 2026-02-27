@@ -1,16 +1,63 @@
+// backend.js
 import dotenv from "dotenv";
 // This forces dotenv to load the .env next to this file (bulletproof)
 dotenv.config({ path: new URL("./.env", import.meta.url) });
 
 import express from "express";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
 import { connectDb } from "./db.js";
 import { User } from "./models/user.js";
 
 const app = express();
 app.use(express.json());
 
+/**
+ * JWT helper: create a signed token for the logged-in user.
+ */
+function generateAccessToken(user) {
+  const secret = process.env.TOKEN_SECRET;
+  if (!secret) {
+    throw new Error("TOKEN_SECRET is missing. Check your packages/express-backend/.env");
+  }
+
+  return jwt.sign(
+    { userId: user._id.toString(), email: user.email },
+    secret,
+    { expiresIn: "1d" }
+  );
+}
+
+/**
+ * Middleware: protect routes by requiring a valid Bearer token.
+ */
+function authenticateUser(req, res, next) {
+  const authHeader = req.headers.authorization; // "Bearer <token>"
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) return res.status(401).send("Unauthorized");
+
+  jwt.verify(token, process.env.TOKEN_SECRET, (err, decoded) => {
+    if (err || !decoded) return res.status(401).send("Unauthorized");
+    req.user = decoded; // { userId, email, iat, exp }
+    next();
+  });
+}
+
 app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+/**
+ * Protected example endpoint (useful for testing)
+ */
+app.get("/api/me", authenticateUser, (req, res) => {
+  res.json({ user: req.user });
+});
+
+app.get("/api/planners", authenticateUser, async (req, res) => {
+  // Later: fetch from DB with ownerId = req.user.userId
+  res.json([]);
+});
 
 // SIGNUP
 app.post("/api/auth/signup", async (req, res) => {
@@ -24,12 +71,13 @@ app.post("/api/auth/signup", async (req, res) => {
     if (existing) return res.status(409).send("Email already in use");
 
     const passwordHash = await bcrypt.hash(password, 10);
-
     const user = await User.create({ email: normalizedEmail, passwordHash });
-    res.status(201).json({ id: user._id.toString(), email: user.email });
+
+    const token = generateAccessToken(user);
+    return res.status(201).json({ token });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Server error");
+    return res.status(500).send("Server error");
   }
 });
 
@@ -47,11 +95,11 @@ app.post("/api/auth/login", async (req, res) => {
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return res.status(401).send("Invalid credentials");
 
-    // For now: just confirm success (we'll add JWT next)
-    res.json({ ok: true, id: user._id.toString(), email: user.email });
+    const token = generateAccessToken(user);
+    return res.status(200).json({ token });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Server error");
+    return res.status(500).send("Server error");
   }
 });
 

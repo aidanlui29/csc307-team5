@@ -3,20 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { saveToken } from "./auth";
 import "./auth.css";
 
-export default function Login() {
+export default function Signup() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleLogin(e) {
+  async function handleSignup(e) {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -24,7 +24,7 @@ export default function Login() {
 
       if (!res.ok) {
         const msg = await res.text();
-        setError(msg || "Login failed");
+        setError(msg || "Signup failed");
         return;
       }
 
@@ -48,14 +48,14 @@ export default function Login() {
       <div className="auth__brand">ClockedIn</div>
 
       <div className="auth__card">
-        <h1 className="auth__title">Welcome</h1>
+        <h1 className="auth__title">Create account</h1>
         <p className="auth__subtitle">
-          Please enter your email and password
+          Enter your email and password to get started
         </p>
 
         {error && <div className="auth__error">{error}</div>}
 
-        <form className="auth__form" onSubmit={handleLogin}>
+        <form className="auth__form" onSubmit={handleSignup}>
           <input
             type="email"
             placeholder="Email"
@@ -75,7 +75,7 @@ export default function Login() {
           />
 
           <button type="submit" className="auth__btn" disabled={loading}>
-            {loading ? "Logging in..." : "Continue"}
+            {loading ? "Creating account..." : "Create account"}
           </button>
         </form>
       </div>
@@ -89,12 +89,12 @@ export default function Login() {
             fontWeight: 500,
           }}
         >
-          Don’t have an account?{" "}
+          Have an account?{" "}
         </span>
 
         <button
           type="button"
-          onClick={() => navigate("/signup")}
+          onClick={() => navigate("/login")}
           style={{
             background: "transparent",
             border: "none",
@@ -105,7 +105,7 @@ export default function Login() {
             fontWeight: 500,
           }}
         >
-          Create account
+          Login
         </button>
       </div>
     </div>
