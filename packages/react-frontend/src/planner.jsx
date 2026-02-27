@@ -397,7 +397,20 @@ useEffect(() => {
       {/* Fixed Top Bar */}
       <div className="planner__topbar" onClick={(e) => e.stopPropagation()}>
         <div className="planner__left">
-          <div className="planner__menu">☰ Menu</div>
+          <button
+            className="planner__menuIcon"
+            type="button"
+            aria-label="Open menu"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.dispatchEvent(new CustomEvent("clockedIn:openMenu"));
+            }}
+          >
+            <span className="planner__hamburgerLine" />
+            <span className="planner__hamburgerLine" />
+            <span className="planner__hamburgerLine" />
+          </button>
+
           <div className="planner__nav">
             <button className="planner__navbtn" onClick={() => setAnchorDate((d) => addWeeks(d, -1))} type="button">
               ◀

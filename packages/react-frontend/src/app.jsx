@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Login from "./login.jsx";
 import Planners from "./planners.jsx";
 import Dashboard from "./dashboard.jsx";
+import Planner from "./planner.jsx"
 
 import TopBar from "./topBar.jsx";
 import MenuDrawer from "./menuDrawer.jsx";
@@ -25,6 +26,23 @@ function Layout() {
   );
 }
 
+function DrawerOnlyLayout() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const onOpen = () => setMenuOpen(true);
+    window.addEventListener("clockedIn:openMenu", onOpen);
+    return () => window.removeEventListener("clockedIn:openMenu", onOpen);
+  }, []);
+
+  return (
+    <div style={{ minHeight: "100vh" }}>
+      <MenuDrawer open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <Outlet />
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -39,6 +57,10 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/planners" element={<Planners />} />
           <Route path="/dashboard" element={<Dashboard />} />
+        </Route>
+
+        <Route element={<DrawerOnlyLayout />}>
+        <Route path="/planner" element={<Planner />} />
         </Route>
 
         {/* Fallback */}
