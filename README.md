@@ -39,7 +39,6 @@ After successful login or signup:
 
 - **Sign-Up**
   - 400 Bad Request (invalid input)
-  - 409 Conflict (email already exists)
 
 - **Login**
   - 401 Unauthorized (user not found)
