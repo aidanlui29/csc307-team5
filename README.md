@@ -23,15 +23,17 @@ After successful login or signup:
 
 ### 2. Login Flow
 
-<img src="https://github.com/user-attachments/assets/fe4cdd4b-e378-4e2e-9e9d-6368083eb074" width="800"/>
+<img src="https://github.com/user-attachments/assets/1e592607-ede1-433c-9514-776c68bed349" width="800"/>
+
 
 ---
 
 ### 3. Protected Planner API Request
 
-<img src="https://github.com/user-attachments/assets/f9c8ec96-905f-4529-a235-380274638c83" width="800"/>
+<img src="https://github.com/user-attachments/assets/e4502666-e6ca-4a4c-8415-45b5852fbd99" width="800"/>
 
 ---
+
 
 ## Security Behavior
 
