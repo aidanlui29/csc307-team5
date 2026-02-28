@@ -11,7 +11,6 @@ import RouteGuard from "./routeGuard.jsx";
 import TopBar from "./topBar.jsx";
 import MenuDrawer from "./menuDrawer.jsx";
 
-/* Layout wrapper: anything inside here gets the menu */
 function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -20,7 +19,6 @@ function Layout() {
       <TopBar onMenuClick={() => setMenuOpen(true)} />
       <MenuDrawer open={menuOpen} onClose={() => setMenuOpen(false)} />
 
-      {/* Page content renders here */}
       <div>
         <Outlet />
       </div>
@@ -49,27 +47,22 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Redirect root to login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* Auth pages (NO menu) */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
         <Route element={<RouteGuard />}>
-          {/* Menu Layout routes */}
           <Route element={<Layout />}>
             <Route path="/planners" element={<Planners />} />
             <Route path="/dashboard" element={<Dashboard />} />
           </Route>
 
-          {/* Drawer-only layout routes */}
           <Route element={<DrawerOnlyLayout />}>
             <Route path="/planner" element={<Planner />} />
           </Route>
         </Route>
 
-        {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

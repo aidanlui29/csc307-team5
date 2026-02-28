@@ -82,8 +82,8 @@ export default function Planner() {
 
   // --- Focus timer modal ---
 const [focusOpen, setFocusOpen] = useState(false);
-const [focusMode, setFocusMode] = useState("work"); // "work" | "break"
-const WORK_SECONDS = 25 * 60;  // change if you want
+const [focusMode, setFocusMode] = useState("work"); 
+const WORK_SECONDS = 25 * 60;
 const BREAK_SECONDS = 5 * 60;
 
 const [durationSec, setDurationSec] = useState(WORK_SECONDS);
@@ -191,9 +191,8 @@ useEffect(() => {
     []
   );
 
-  /* ---------- DOM measurement for accurate positioning ---------- */
   const gridRef = useRef(null);
-  const [layout, setLayout] = useState(null); // {headerH, rowH}
+  const [layout, setLayout] = useState(null); 
 
   useEffect(() => {
     const computeLayout = () => {
@@ -213,7 +212,6 @@ useEffect(() => {
     return () => window.removeEventListener("resize", computeLayout);
   }, []);
 
-  /* ---------- now line (updates each minute) ---------- */
   const [nowLineStyle, setNowLineStyle] = useState(null);
   useEffect(() => {
     const tick = () => setNow(new Date());
@@ -264,9 +262,8 @@ useEffect(() => {
     setNowLineStyle({ top: `${top}px`, left: `${left}px`, width: `${width}px` });
   }, [now, isCurrentWeek, todayIndex, layout]);
 
-  /* ---------- Add/Edit modal form state ---------- */
   const [title, setTitle] = useState("");
-  const [kind, setKind] = useState("schedule"); // schedule | task
+  const [kind, setKind] = useState("schedule"); 
   const [dateStr, setDateStr] = useState(() => toDateInputValue(new Date()));
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
@@ -336,7 +333,6 @@ useEffect(() => {
     setSelectedEventId(null);
   }
 
-  /* ---------- rendering helpers ---------- */
   function getEventStyle(ev) {
     if (!layout || !gridRef.current) return { display: "none" };
 
@@ -367,7 +363,6 @@ useEffect(() => {
   }
 
   function getPopoverStyle(ev) {
-    // position popover near the event, clamp inside grid width
     if (!gridRef.current) return null;
     const s = getEventStyle(ev);
     if (s.display === "none") return null;
@@ -378,10 +373,9 @@ useEffect(() => {
     const leftNum = parseFloat(s.left);
     const topNum = parseFloat(s.top);
 
-    let left = leftNum + parseFloat(s.width) + 12; // to the right
+    let left = leftNum + parseFloat(s.width) + 12; 
     let top = topNum;
 
-    // clamp if it would go off-screen
     if (left + popW > gridW - 8) left = Math.max(8, leftNum - popW - 12);
     if (top < 70) top = 70;
 
@@ -394,7 +388,6 @@ useEffect(() => {
 
   return (
     <div className="planner" onClick={() => setSelectedEventId(null)}>
-      {/* Fixed Top Bar */}
       <div className="planner__topbar" onClick={(e) => e.stopPropagation()}>
         <div className="planner__left">
           <button
@@ -436,10 +429,8 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Scroll Area */}
       <div className="planner__scrollArea" onClick={() => setSelectedEventId(null)}>
         <div className="planner__gridwrap" ref={gridRef}>
-          {/* Sticky Day Header */}
           <div className="planner__header">
             <div className="planner__timecol" />
             {weekDates.map((d, idx) => (
@@ -456,10 +447,8 @@ useEffect(() => {
             ))}
           </div>
 
-          {/* Now line */}
           {nowLineStyle && <div className="planner__nowLine" style={nowLineStyle} aria-hidden="true" />}
 
-          {/* Events */}
           {events.map((ev) => (
             <div
               key={ev.id}
@@ -475,7 +464,6 @@ useEffect(() => {
             </div>
           ))}
 
-          {/* Popover (edit/delete) */}
           {selectedEvent && (
             <div
               className="plannerPopover"
@@ -508,7 +496,6 @@ useEffect(() => {
             </div>
           )}
 
-          {/* Time rows */}
           {hours.map((hour) => (
             <div key={hour} className="planner__row">
               <div className="planner__time">{formatHour(hour)}</div>
@@ -525,7 +512,6 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Add/Edit Modal (same one you already have) */}
       {addOpen && (
         <div className="plannerModal" role="dialog" aria-modal="true" onClick={closeAdd}>
           <div className="plannerModal__backdrop" />

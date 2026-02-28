@@ -6,7 +6,6 @@ import "./Planners.css";
 export default function Planners() {
   const navigate = useNavigate();
 
-  // Start with empty list so your default UI shows immediately
   const [planners, setPlanners] = useState([]);
   const [error, setError] = useState("");
 

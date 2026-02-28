@@ -1,5 +1,3 @@
-// src/auth.jsx
-
 const TOKEN_KEY = "clockedInToken";
 
 export function saveToken(token) {

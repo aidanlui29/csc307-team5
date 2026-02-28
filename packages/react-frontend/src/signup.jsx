@@ -80,7 +80,6 @@ export default function Signup() {
         </form>
       </div>
 
-      {/* Bottom link */}
       <div style={{ marginTop: "14px", textAlign: "center" }}>
         <span
           style={{

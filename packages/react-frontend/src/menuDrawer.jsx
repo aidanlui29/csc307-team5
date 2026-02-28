@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { clearToken } from "./auth"; // ✅ added
+import { clearToken } from "./auth"; 
 
 export default function MenuDrawer({ open, onClose }) {
   const location = useLocation();
@@ -15,7 +15,7 @@ export default function MenuDrawer({ open, onClose }) {
   }, [open, onClose]);
 
   function handleLogout() {
-    clearToken(); // ✅ changed (was removeItem("clockedInUser"))
+    clearToken(); 
     onClose();
     navigate("/login");
   }
@@ -54,12 +54,10 @@ export default function MenuDrawer({ open, onClose }) {
           overflowY: "auto",
         }}
       >
-        {/* Header */}
         <div style={{ fontWeight: 800, fontSize: 18 }}>
           Menu
         </div>
 
-        {/* Planners FIRST */}
         <Link
           to="/planners"
           onClick={onClose}
@@ -68,7 +66,6 @@ export default function MenuDrawer({ open, onClose }) {
           Planners
         </Link>
 
-        {/* Dashboard SECOND */}
         <Link
           to="/dashboard"
           onClick={onClose}
@@ -77,7 +74,6 @@ export default function MenuDrawer({ open, onClose }) {
           Dashboard
         </Link>
 
-        {/* Logout positioned using your spacing */}
         <button onClick={handleLogout} style={logoutStyle}>
           Log Out
         </button>
