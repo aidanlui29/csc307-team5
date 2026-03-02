@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { saveToken, clearToken } from "./auth";
 import "./auth.css";
 
@@ -38,7 +38,6 @@ export default function Login() {
         return;
       }
 
-      // Verify token against your protected endpoint
       const verifyRes = await fetch(AUTH_ME_URL, {
         headers: { Authorization: `Bearer ${data.token}` },
       });
@@ -90,6 +89,35 @@ export default function Login() {
             {loading ? "Logging in..." : "Continue"}
           </button>
         </form>
+      </div>
+
+      {/* ✅ Footer is OUTSIDE the white card now */}
+      <div style={{ marginTop: "14px", textAlign: "center" }}>
+        <span
+          style={{
+            color: "white",
+            fontSize: "14px",
+            fontWeight: 500,
+          }}
+        >
+          Don’t have an account?{" "}
+        </span>
+
+        <button
+          type="button"
+          onClick={() => navigate("/signup")}
+          style={{
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
+            color: "#3b82f6",
+            fontSize: "14px",
+            fontWeight: 500,
+          }}
+        >
+          Create account
+        </button>
       </div>
     </div>
   );
