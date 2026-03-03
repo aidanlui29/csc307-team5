@@ -6,11 +6,11 @@ const AUTH_ME_URL = "/api/me";
 
 export default function RouteGuard() {
   const token = getToken();
-  if (!token) return <Navigate to="/login" replace />;
-
-  const [status, setStatus] = useState("checking"); 
+  const [status, setStatus] = useState(token ? "checking" : "missing");
 
   useEffect(() => {
+    if (!token) return;
+
     let cancelled = false;
 
     async function verify() {
@@ -21,16 +21,21 @@ export default function RouteGuard() {
 
         if (cancelled) return;
 
-        if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
           clearToken();
           setStatus("invalid");
           return;
         }
 
+        if (!res.ok) {
+          setStatus("ok");
+          return;
+        }
+
         setStatus("ok");
       } catch {
-        clearToken();
-        setStatus("invalid");
+        if (cancelled) return;
+        setStatus("ok");
       }
     }
 
@@ -40,6 +45,7 @@ export default function RouteGuard() {
     };
   }, [token]);
 
+  if (status === "missing") return <Navigate to="/login" replace />;
   if (status === "checking") return null;
   if (status === "invalid") return <Navigate to="/login" replace />;
   return <Outlet />;

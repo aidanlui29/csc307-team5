@@ -59,7 +59,7 @@ export default function App() {
           </Route>
 
           <Route element={<DrawerOnlyLayout />}>
-            <Route path="/planner" element={<Planner />} />
+            <Route path="/planner/:id" element={<Planner />} />
           </Route>
         </Route>
 

@@ -3,42 +3,6 @@
   background: #ffffff;
 }
 
-.plannersTopBar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 18px 22px;
-}
-
-.menuBtn {
-  border: none;
-  background: transparent;
-  font-size: 22px;
-  cursor: pointer;
-}
-
-.searchWrap {
-  position: relative;
-  width: min(620px, 70vw);
-}
-
-.searchIcon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  opacity: 0.6;
-}
-
-.searchInput {
-  width: 100%;
-  padding: 12px 14px 12px 40px;
-  border: none;
-  background: #f3f4f6;
-  border-radius: 8px;
-  outline: none;
-}
-
 .plannersMain {
   display: flex;
   gap: 36px;
@@ -46,7 +10,6 @@
   align-items: flex-start;
 }
 
-/* Left */
 .tilesArea {
   flex: 1;
   padding-top: 30px;
@@ -58,18 +21,19 @@
   gap: 28px;
 }
 
-/* ✅ Square with curved edges */
 .plannerTile {
   width: 240px;
   height: 240px;
+  box-sizing: border-box;
   border-radius: 28px;
   border: none;
   background: #e5e7eb;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
-  cursor: pointer;
-  display: grid;
-  place-items: center;
   transition: transform 120ms ease, box-shadow 120ms ease;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
 }
 
 .plannerTile:hover {
@@ -77,7 +41,62 @@
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
 }
 
+.plannerTileReal {
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  box-sizing: border-box;
+  height: 240px;
+}
+
+.tileInner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tileTitle {
+  font-size: 22px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.tileDesc {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(17, 24, 39, 0.75);
+  line-height: 1.35;
+  max-height: 75px;
+  overflow: hidden;
+}
+
+.tileActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  height: 34px;
+}
+
+.tileActions button {
+  flex: 1;
+  height: 34px;
+  border: none;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tileActions button:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
 .createTile {
+  display: grid;
+  place-items: center;
+  cursor: pointer;
   background: #9ca3af;
 }
 
@@ -88,7 +107,6 @@
   color: #111827;
 }
 
-/* Right */
 .rightPanels {
   width: 360px;
   display: flex;
@@ -119,29 +137,212 @@
 }
 
 .panelTotal {
-  font-weight: 600;
+  font-weight: 800;
   color: #1d4ed8;
 }
 
+.emptyState {
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+/* NEW: list rows for Today + Weekly */
 .panelList {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
   padding-top: 6px;
 }
 
 .panelRow {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.rowLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+  padding-left: 16px;
+}
+
+.rowDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  position: absolute;
+  left: 0;
+  top: 6px;
 }
 
 .rowTitle {
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.rowSub {
+  font-weight: 650;
+  font-size: 12px;
+  opacity: 0.75;
 }
 
 .rowMeta {
-  font-weight: 600;
+  font-weight: 800;
   color: #1d4ed8;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* MODAL */
+.plannerModal {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+}
+
+.plannerModal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.plannerModal__card {
+  position: relative;
+  width: min(720px, calc(100vw - 48px));
+  margin: 90px auto;
+  background: #ffffff;
+  color: #111;
+  border-radius: 22px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
+}
+
+.plannerModal__close {
+  position: absolute;
+  top: 6px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  font-size: 28px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.plannerModal__title {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: #e7e7e7;
+  border-radius: 10px;
+  padding: 12px 12px;
+  font-size: 20px;
+  font-weight: 700;
+  box-sizing: border-box;
+  margin-bottom: 16px;
+}
+
+.plannerModal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.plannerModal__field label {
+  font-weight: 900;
+  opacity: 0.75;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.colorRowSimple {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.swatchSimple {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.swatchSimple.selected {
+  border-color: #111;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.15);
+}
+
+.plannerDesc {
+  border: none;
+  outline: none;
+  background: #e0e0e0;
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  resize: none;
+  min-height: 160px;
+}
+
+.plannerModal__error {
+  color: #b00020;
+  font-weight: 800;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.plannerModal__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.plannerModal__save {
+  background: #7bd2ff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 18px;
+  font-weight: 900;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.plannerModal__save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.confirmTitle {
+  font-size: 22px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.confirmBtn {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 900;
+  cursor: pointer;
+  background: #e7e7e7;
+}
+
+.confirmBtnDanger {
+  background: #ff2e2e;
+  color: white;
 }

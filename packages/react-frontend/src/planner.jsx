@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 import "./planner.css";
 
 /* ---------- date helpers ---------- */
@@ -58,95 +59,104 @@ function minutesToTime(mins) {
   return `${pad2(h)}:${pad2(m)}`;
 }
 
-/* ---------- localStorage ---------- */
-const STORAGE_KEY = "plannerEvents_v1";
+function storageKey(id) {
+  return `plannerEvents_v1_${id || "default"}`;
+}
 
 export default function Planner() {
+  const { id } = useParams();
+
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   const [anchorDate, setAnchorDate] = useState(() => new Date());
   const [now, setNow] = useState(() => new Date());
 
-  // events
   const [events, setEvents] = useState(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(storageKey(id));
       return raw ? JSON.parse(raw) : [];
     } catch {
       return [];
     }
   });
+
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
-  }, [events]);
+    try {
+      const raw = localStorage.getItem(storageKey(id));
+      setEvents(raw ? JSON.parse(raw) : []);
+    } catch {
+      setEvents([]);
+    }
+  }, [id]);
 
-  // --- Focus timer modal ---
-const [focusOpen, setFocusOpen] = useState(false);
-const [focusMode, setFocusMode] = useState("work"); 
-const WORK_SECONDS = 25 * 60;
-const BREAK_SECONDS = 5 * 60;
+  useEffect(() => {
+    localStorage.setItem(storageKey(id), JSON.stringify(events));
+  }, [events, id]);
 
-const [durationSec, setDurationSec] = useState(WORK_SECONDS);
-const [remainingSec, setRemainingSec] = useState(WORK_SECONDS);
-const [isRunning, setIsRunning] = useState(false);
-const timerRef = useRef(null);
+  const [focusOpen, setFocusOpen] = useState(false);
+  const [focusMode, setFocusMode] = useState("work");
+  const WORK_SECONDS = 25 * 60;
+  const BREAK_SECONDS = 5 * 60;
 
-function openFocus() {
-  setFocusOpen(true);
-  setIsRunning(false);
-  // keep whatever mode you're in
-  const d = focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
-  setDurationSec(d);
-  setRemainingSec(d);
-}
+  const [durationSec, setDurationSec] = useState(WORK_SECONDS);
+  const [remainingSec, setRemainingSec] = useState(WORK_SECONDS);
+  const [isRunning, setIsRunning] = useState(false);
+  const timerRef = useRef(null);
 
-function closeFocus() {
-  setFocusOpen(false);
-  setIsRunning(false);
-  if (timerRef.current) clearInterval(timerRef.current);
-  timerRef.current = null;
-}
+  function openFocus() {
+    setFocusOpen(true);
+    setIsRunning(false);
+    const d = focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
+    setDurationSec(d);
+    setRemainingSec(d);
+  }
 
-function setMode(mode) {
-  setFocusMode(mode);
-  setIsRunning(false);
-  if (timerRef.current) clearInterval(timerRef.current);
-  timerRef.current = null;
+  function closeFocus() {
+    setFocusOpen(false);
+    setIsRunning(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+  }
 
-  const d = mode === "work" ? WORK_SECONDS : BREAK_SECONDS;
-  setDurationSec(d);
-  setRemainingSec(d);
-}
+  function setMode(mode) {
+    setFocusMode(mode);
+    setIsRunning(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
 
-function startTimer() {
-  if (isRunning) return;
-  setIsRunning(true);
-}
+    const d = mode === "work" ? WORK_SECONDS : BREAK_SECONDS;
+    setDurationSec(d);
+    setRemainingSec(d);
+  }
 
-function endTimer() {
-  setIsRunning(false);
-  if (timerRef.current) clearInterval(timerRef.current);
-  timerRef.current = null;
+  function startTimer() {
+    if (isRunning) return;
+    setIsRunning(true);
+  }
 
-  const d = focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
-  setDurationSec(d);
-  setRemainingSec(d);
-}
+  function endTimer() {
+    setIsRunning(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
 
-function formatMMSS(sec) {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
+    const d = focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
+    setDurationSec(d);
+    setRemainingSec(d);
+  }
 
-useEffect(() => {
+  function formatMMSS(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
+
+  useEffect(() => {
     if (!isRunning) return;
-  
+
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setRemainingSec((prev) => {
         if (prev <= 1) {
-          // auto-stop at 0
           if (timerRef.current) clearInterval(timerRef.current);
           timerRef.current = null;
           setIsRunning(false);
@@ -155,19 +165,17 @@ useEffect(() => {
         return prev - 1;
       });
     }, 1000);
-  
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = null;
     };
   }, [isRunning]);
 
-  // add/edit modal
   const [addOpen, setAddOpen] = useState(false);
   const [formError, setFormError] = useState("");
   const [editingId, setEditingId] = useState(null);
 
-  // click-popover
   const [selectedEventId, setSelectedEventId] = useState(null);
 
   const today = useMemo(() => new Date(), [now]);
@@ -183,7 +191,6 @@ useEffect(() => {
     return sameDay(currentWeekStart, weekStart);
   }, [today, weekStart]);
 
-  // Full day
   const START_HOUR = 0;
   const END_HOUR = 23;
   const hours = useMemo(
@@ -192,7 +199,7 @@ useEffect(() => {
   );
 
   const gridRef = useRef(null);
-  const [layout, setLayout] = useState(null); 
+  const [layout, setLayout] = useState(null);
 
   useEffect(() => {
     const computeLayout = () => {
@@ -220,8 +227,8 @@ useEffect(() => {
 
     const t = setTimeout(() => {
       tick();
-      const id = setInterval(tick, 60 * 1000);
-      window.__plannerNowInterval = id;
+      const id2 = setInterval(tick, 60 * 1000);
+      window.__plannerNowInterval = id2;
     }, msToNextMinute);
 
     return () => {
@@ -263,7 +270,7 @@ useEffect(() => {
   }, [now, isCurrentWeek, todayIndex, layout]);
 
   const [title, setTitle] = useState("");
-  const [kind, setKind] = useState("schedule"); 
+  const [kind, setKind] = useState("schedule");
   const [dateStr, setDateStr] = useState(() => toDateInputValue(new Date()));
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
@@ -328,8 +335,8 @@ useEffect(() => {
     closeAdd();
   }
 
-  function deleteEvent(id) {
-    setEvents((prev) => prev.filter((e) => e.id !== id));
+  function deleteEvent(eventId) {
+    setEvents((prev) => prev.filter((e) => e.id !== eventId));
     setSelectedEventId(null);
   }
 
@@ -373,7 +380,7 @@ useEffect(() => {
     const leftNum = parseFloat(s.left);
     const topNum = parseFloat(s.top);
 
-    let left = leftNum + parseFloat(s.width) + 12; 
+    let left = leftNum + parseFloat(s.width) + 12;
     let top = topNum;
 
     if (left + popW > gridW - 8) left = Math.max(8, leftNum - popW - 12);
@@ -382,9 +389,7 @@ useEffect(() => {
     return { left: `${left}px`, top: `${top}px`, width: `${popW}px` };
   }
 
-  const selectedEvent = selectedEventId
-    ? events.find((e) => e.id === selectedEventId)
-    : null;
+  const selectedEvent = selectedEventId ? events.find((e) => e.id === selectedEventId) : null;
 
   return (
     <div className="planner" onClick={() => setSelectedEventId(null)}>
@@ -465,23 +470,14 @@ useEffect(() => {
           ))}
 
           {selectedEvent && (
-            <div
-              className="plannerPopover"
-              style={getPopoverStyle(selectedEvent)}
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="plannerPopover" style={getPopoverStyle(selectedEvent)} onClick={(e) => e.stopPropagation()}>
               <div className="plannerPopover__title">{selectedEvent.title}</div>
               <div className="plannerPopover__desc">
                 {selectedEvent.desc ? selectedEvent.desc : "description..."}
               </div>
 
               <div className="plannerPopover__actions">
-                <button
-                  className="plannerPopover__iconBtn"
-                  type="button"
-                  title="Edit"
-                  onClick={() => openEdit(selectedEvent)}
-                >
+                <button className="plannerPopover__iconBtn" type="button" title="Edit" onClick={() => openEdit(selectedEvent)}>
                   ✎
                 </button>
                 <button
@@ -502,9 +498,7 @@ useEffect(() => {
               {weekDates.map((_, idx) => (
                 <div
                   key={`${idx}-${hour}`}
-                  className={`planner__cell ${
-                    isCurrentWeek && idx === todayIndex ? "planner__cell--today" : ""
-                  }`}
+                  className={`planner__cell ${isCurrentWeek && idx === todayIndex ? "planner__cell--today" : ""}`}
                 />
               ))}
             </div>
@@ -582,49 +576,46 @@ useEffect(() => {
           </div>
         </div>
       )}
+
       {focusOpen && (
-  <div className="focusModal" role="dialog" aria-modal="true" onClick={closeFocus}>
-    <div className="focusModal__backdrop" />
-    <div className="focusModal__card" onClick={(e) => e.stopPropagation()}>
-      <div className="focusModal__top">
-        <button
-          type="button"
-          className={`focusModal__pill ${focusMode === "work" ? "is-active" : ""}`}
-          onClick={() => setMode("work")}
-        >
-          work timer
-        </button>
-        <button
-          type="button"
-          className={`focusModal__pill ${focusMode === "break" ? "is-active" : ""}`}
-          onClick={() => setMode("break")}
-        >
-          break timer
-        </button>
-      </div>
+        <div className="focusModal" role="dialog" aria-modal="true" onClick={closeFocus}>
+          <div className="focusModal__backdrop" />
+          <div className="focusModal__card" onClick={(e) => e.stopPropagation()}>
+            <div className="focusModal__top">
+              <button
+                type="button"
+                className={`focusModal__pill ${focusMode === "work" ? "is-active" : ""}`}
+                onClick={() => setMode("work")}
+              >
+                work timer
+              </button>
+              <button
+                type="button"
+                className={`focusModal__pill ${focusMode === "break" ? "is-active" : ""}`}
+                onClick={() => setMode("break")}
+              >
+                break timer
+              </button>
+            </div>
 
-      <div className="focusModal__circleWrap">
-        <div className="focusModal__circle">
-          <div className="focusModal__time">{formatMMSS(remainingSec)}</div>
+            <div className="focusModal__circleWrap">
+              <div className="focusModal__circle">
+                <div className="focusModal__time">{formatMMSS(remainingSec)}</div>
+              </div>
+            </div>
+
+            <div className="focusModal__btns">
+              <button type="button" className="focusModal__btn" onClick={() => (isRunning ? setIsRunning(false) : startTimer())}>
+                {isRunning ? "PAUSE" : "START"}
+              </button>
+
+              <button type="button" className="focusModal__btn" onClick={endTimer}>
+                END
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div className="focusModal__btns">
-        <button
-          type="button"
-          className="focusModal__btn"
-          onClick={() => (isRunning ? setIsRunning(false) : startTimer())}
-        >
-          {isRunning ? "PAUSE" : "START"}
-        </button>
-
-        <button type="button" className="focusModal__btn" onClick={endTimer}>
-          END
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      )}
     </div>
   );
 }

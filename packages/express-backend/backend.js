@@ -1,6 +1,6 @@
-// backend.js
+// packages/express-backend/server.js
 import dotenv from "dotenv";
-// This forces dotenv to load the .env next to this file (bulletproof)
+// bulletproof: load .env next to this file
 dotenv.config({ path: new URL("./.env", import.meta.url) });
 
 import express from "express";
@@ -13,9 +13,10 @@ import { User } from "./models/user.js";
 const app = express();
 app.use(express.json());
 
-/**
- * JWT helper: create a signed token for the logged-in user.
- */
+/* =========================
+   JWT helpers + middleware
+   ========================= */
+
 function generateAccessToken(user) {
   const secret = process.env.TOKEN_SECRET;
   if (!secret) {
@@ -29,13 +30,9 @@ function generateAccessToken(user) {
   );
 }
 
-/**
- * Middleware: protect routes by requiring a valid Bearer token.
- */
 function authenticateUser(req, res, next) {
   const authHeader = req.headers.authorization; // "Bearer <token>"
   const token = authHeader && authHeader.split(" ")[1];
-
   if (!token) return res.status(401).send("Unauthorized");
 
   jwt.verify(token, process.env.TOKEN_SECRET, (err, decoded) => {
@@ -45,19 +42,19 @@ function authenticateUser(req, res, next) {
   });
 }
 
+/* =========================
+   Health / debug
+   ========================= */
+
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
-/**
- * Protected example endpoint (useful for testing)
- */
 app.get("/api/me", authenticateUser, (req, res) => {
   res.json({ user: req.user });
 });
 
-app.get("/api/planners", authenticateUser, async (req, res) => {
-  // Later: fetch from DB with ownerId = req.user.userId
-  res.json([]);
-});
+/* =========================
+   AUTH
+   ========================= */
 
 // SIGNUP
 app.post("/api/auth/signup", async (req, res) => {
@@ -103,6 +100,66 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+let planners = []; // { id, ownerId, name, color, description }
+
+function makeId() {
+  return globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : String(Date.now());
+}
+
+app.get("/api/planners", authenticateUser, async (req, res) => {
+  const ownerId = req.user.userId;
+  res.json(planners.filter((p) => p.ownerId === ownerId));
+});
+
+app.post("/api/planners", authenticateUser, async (req, res) => {
+  const { name, color, description } = req.body;
+
+  if (!name || !String(name).trim()) {
+    return res.status(400).send("Planner name is required");
+  }
+
+  const created = {
+    id: makeId(),
+    ownerId: req.user.userId,
+    name: String(name).trim(),
+    color: color || "#9ca3af",
+    description: description ? String(description) : "",
+  };
+
+  planners.unshift(created);
+  return res.status(201).json(created);
+});
+
+app.put("/api/planners/:id", authenticateUser, async (req, res) => {
+  const { id } = req.params;
+  const { name, color, description } = req.body;
+
+  const idx = planners.findIndex((p) => p.id === id && p.ownerId === req.user.userId);
+  if (idx === -1) return res.status(404).send("Planner not found");
+
+  const updated = {
+    ...planners[idx],
+    name: name !== undefined ? String(name).trim() : planners[idx].name,
+    color: color !== undefined ? color : planners[idx].color,
+    description: description !== undefined ? String(description) : planners[idx].description,
+  };
+
+  if (!updated.name) return res.status(400).send("Planner name is required");
+
+  planners[idx] = updated;
+  return res.json(updated);
+});
+
+app.delete("/api/planners/:id", authenticateUser, async (req, res) => {
+  const { id } = req.params;
+
+  const before = planners.length;
+  planners = planners.filter((p) => !(p.id === id && p.ownerId === req.user.userId));
+
+  if (planners.length === before) return res.status(404).send("Planner not found");
+  return res.status(204).send();
+});
+
 const port = process.env.PORT || 3001;
 
 async function start() {
@@ -110,6 +167,7 @@ async function start() {
     if (!process.env.MONGODB_URI) {
       throw new Error("MONGODB_URI is missing. Check packages/express-backend/.env");
     }
+
     await connectDb();
     app.listen(port, () => console.log(`Server running on ${port}`));
   } catch (err) {
