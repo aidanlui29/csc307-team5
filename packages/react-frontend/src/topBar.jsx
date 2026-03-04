@@ -8,9 +8,7 @@ export default function TopBar({ onMenuClick }) {
         justifyContent: "space-between",
         padding: "0 16px",
         color: "white",
-        background:
-          "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.12), transparent 40%)," +
-          "linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)",
+        background: "#1e3a4a",
         position: "sticky",
         top: 0,
         zIndex: 20,

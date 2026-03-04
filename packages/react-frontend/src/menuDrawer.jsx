@@ -1,9 +1,5 @@
 import { useEffect } from "react";
-import {
-  Link,
-  useLocation,
-  useNavigate
-} from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { clearToken } from "./auth";
 
 export default function MenuDrawer({ open, onClose }) {
@@ -15,8 +11,7 @@ export default function MenuDrawer({ open, onClose }) {
       if (e.key === "Escape") onClose();
     }
     if (open) window.addEventListener("keydown", onKeyDown);
-    return () =>
-      window.removeEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
   function handleLogout() {
@@ -48,9 +43,7 @@ export default function MenuDrawer({ open, onClose }) {
           width: 280,
           padding: 20,
           color: "white",
-          background:
-            "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.12), transparent 40%)," +
-            "linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)",
+          background: "#1e3a4a",
           boxShadow: "20px 0 60px rgba(0,0,0,0.35)",
           display: "flex",
           flexDirection: "column",
@@ -97,7 +90,8 @@ function navStyle(active) {
 }
 
 const logoutStyle = {
-  marginTop: "190%",
+  marginTop: "auto",
+  marginBottom: "15%",
   padding: "12px",
   border: "none",
   borderRadius: "10px",

@@ -3,11 +3,7 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .auth {
@@ -16,19 +12,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
-  background:
-    radial-gradient(
-      circle at 20% 20%,
-      rgba(255, 255, 255, 0.12),
-      transparent 40%
-    ),
-    linear-gradient(
-      135deg,
-      #0f2027 0%,
-      #203a43 50%,
-      #2c5364 100%
-    );
+  background: #1e3a4a;
 }
 
 .auth__brand {
@@ -78,8 +62,8 @@ body {
 }
 
 .auth__input:focus {
-  border-color: #2c5364;
-  box-shadow: 0 0 0 2px rgba(44, 83, 100, 0.2);
+  border-color: #1e3a4a;
+  box-shadow: 0 0 0 2px rgba(30, 58, 74, 0.2);
 }
 
 .auth__btn {
@@ -87,7 +71,7 @@ body {
   padding: 12px;
   border: none;
   border-radius: 10px;
-  background: #2c5364;
+  background: #1e3a4a;
   color: white;
   font-weight: 600;
   cursor: pointer;
@@ -95,7 +79,7 @@ body {
 }
 
 .auth__btn:hover {
-  background: #1e3c48;
+  background: #162b38;
 }
 
 .auth__error {
