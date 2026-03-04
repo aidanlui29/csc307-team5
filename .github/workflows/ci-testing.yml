@@ -3,16 +3,30 @@ name: CI Testing
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
-      - run: npm run -w express-backend lint
-      - run: npm run -w react-frontend lint
-      - run: npm run -w react-frontend build
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Backend lint
+        run: npm run -w express-backend lint
+
+      - name: Frontend lint
+        run: npm run -w react-frontend lint
+
+      - name: Frontend build
+        run: npm run -w react-frontend build
+
+      - name: Backend tests
+        run: npm run -w express-backend test
