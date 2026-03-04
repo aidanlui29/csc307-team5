@@ -74,14 +74,22 @@ export default function Signup() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          <button type="submit" className="auth__btn" disabled={loading}>
+          <button
+            type="submit"
+            className="auth__btn"
+            disabled={loading}>
             {loading ? "Creating account..." : "Create account"}
           </button>
         </form>
       </div>
 
       <div style={{ marginTop: "14px", textAlign: "center" }}>
-        <span style={{ color: "white", fontSize: "14px", fontWeight: 500 }}>
+        <span
+          style={{
+            color: "white",
+            fontSize: "14px",
+            fontWeight: 500
+          }}>
           Have an account?{" "}
         </span>
 

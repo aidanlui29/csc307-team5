@@ -1,5 +1,9 @@
 import { useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate
+} from "react-router-dom";
 import { clearToken } from "./auth";
 
 export default function MenuDrawer({ open, onClose }) {
@@ -11,7 +15,8 @@ export default function MenuDrawer({ open, onClose }) {
       if (e.key === "Escape") onClose();
     }
     if (open) window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () =>
+      window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
   function handleLogout() {

@@ -62,7 +62,9 @@ export default function Login() {
 
       <div className="auth__card">
         <h1 className="auth__title">Welcome</h1>
-        <p className="auth__subtitle">Please enter your email and password</p>
+        <p className="auth__subtitle">
+          Please enter your email and password
+        </p>
 
         {error && <div className="auth__error">{error}</div>}
 
@@ -85,14 +87,22 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          <button type="submit" className="auth__btn" disabled={loading}>
+          <button
+            type="submit"
+            className="auth__btn"
+            disabled={loading}>
             {loading ? "Logging in..." : "Continue"}
           </button>
         </form>
       </div>
 
       <div style={{ marginTop: "14px", textAlign: "center" }}>
-        <span style={{ color: "white", fontSize: "14px", fontWeight: 500 }}>
+        <span
+          style={{
+            color: "white",
+            fontSize: "14px",
+            fontWeight: 500
+          }}>
           Don’t have an account?{" "}
         </span>
 

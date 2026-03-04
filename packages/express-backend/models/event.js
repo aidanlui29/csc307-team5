@@ -40,6 +40,11 @@ const EventSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-EventSchema.index({ ownerId: 1, plannerId: 1, date: 1, startMin: 1 });
+EventSchema.index({
+  ownerId: 1,
+  plannerId: 1,
+  date: 1,
+  startMin: 1
+});
 
 export const Event = mongoose.model("Event", EventSchema);

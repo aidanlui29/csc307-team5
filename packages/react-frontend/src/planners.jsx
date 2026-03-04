@@ -70,9 +70,11 @@ export default function Planners() {
   const [error, setError] = useState("");
 
   // create/edit modal state
-  const [plannerModalOpen, setPlannerModalOpen] = useState(false);
+  const [plannerModalOpen, setPlannerModalOpen] =
+    useState(false);
   const [plannerName, setPlannerName] = useState("");
-  const [plannerColor, setPlannerColor] = useState(DEFAULT_COLOR);
+  const [plannerColor, setPlannerColor] =
+    useState(DEFAULT_COLOR);
   const [plannerDesc, setPlannerDesc] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [formError, setFormError] = useState("");
@@ -86,7 +88,10 @@ export default function Planners() {
   // server events for overview panels
   const [eventsByPlanner, setEventsByPlanner] = useState({}); // { [plannerId]: Event[] }
 
-  const todayStr = useMemo(() => toDateInputValue(new Date()), []);
+  const todayStr = useMemo(
+    () => toDateInputValue(new Date()),
+    []
+  );
 
   // Load planners list
   useEffect(() => {
@@ -106,14 +111,17 @@ export default function Planners() {
 
         if (!res.ok) {
           const msg = await res.text();
-          if (!cancelled) setError(msg || "Failed to load planners");
+          if (!cancelled)
+            setError(msg || "Failed to load planners");
           return;
         }
 
         const data = await res.json();
-        if (!cancelled) setPlanners(Array.isArray(data) ? data : []);
+        if (!cancelled)
+          setPlanners(Array.isArray(data) ? data : []);
       } catch {
-        if (!cancelled) setError("Network error. Is the backend running?");
+        if (!cancelled)
+          setError("Network error. Is the backend running?");
       }
     }
 
@@ -132,9 +140,12 @@ export default function Planners() {
         const entries = await Promise.all(
           planners.map(async (p) => {
             try {
-              const res = await fetch(`/api/planners/${p.id}/events`, {
-                headers: authHeaders()
-              });
+              const res = await fetch(
+                `/api/planners/${p.id}/events`,
+                {
+                  headers: authHeaders()
+                }
+              );
 
               if (res.status === 401) {
                 navigate("/login");
@@ -154,7 +165,8 @@ export default function Planners() {
         if (cancelled) return;
 
         const obj = {};
-        for (const [plannerId, evs] of entries) obj[plannerId] = evs;
+        for (const [plannerId, evs] of entries)
+          obj[plannerId] = evs;
         setEventsByPlanner(obj);
       } catch {
         // ignore
@@ -220,10 +232,15 @@ export default function Planners() {
         });
 
         if (res.status === 401) return navigate("/login");
-        if (!res.ok) throw new Error((await res.text()) || "Failed to update planner");
+        if (!res.ok)
+          throw new Error(
+            (await res.text()) || "Failed to update planner"
+          );
 
         const updated = await res.json();
-        setPlanners((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+        setPlanners((prev) =>
+          prev.map((p) => (p.id === updated.id ? updated : p))
+        );
         closeModal();
       } else {
         const res = await fetch("/api/planners", {
@@ -236,7 +253,10 @@ export default function Planners() {
         });
 
         if (res.status === 401) return navigate("/login");
-        if (!res.ok) throw new Error((await res.text()) || "Failed to create planner");
+        if (!res.ok)
+          throw new Error(
+            (await res.text()) || "Failed to create planner"
+          );
 
         const created = await res.json();
         setPlanners((prev) => [created, ...prev]);
@@ -267,15 +287,23 @@ export default function Planners() {
 
     setConfirmBusy(true);
     try {
-      const res = await fetch(`/api/planners/${confirmPlanner.id}`, {
-        method: "DELETE",
-        headers: authHeaders()
-      });
+      const res = await fetch(
+        `/api/planners/${confirmPlanner.id}`,
+        {
+          method: "DELETE",
+          headers: authHeaders()
+        }
+      );
 
       if (res.status === 401) return navigate("/login");
-      if (!res.ok) throw new Error((await res.text()) || "Failed to delete planner");
+      if (!res.ok)
+        throw new Error(
+          (await res.text()) || "Failed to delete planner"
+        );
 
-      setPlanners((prev) => prev.filter((p) => p.id !== confirmPlanner.id));
+      setPlanners((prev) =>
+        prev.filter((p) => p.id !== confirmPlanner.id)
+      );
       closeDeleteConfirm();
     } catch (e) {
       setError(e?.message || "Failed to delete planner.");
@@ -319,7 +347,10 @@ export default function Planners() {
         plannerName: e.plannerName,
         plannerColor: e.plannerColor,
         priority: e.priority || "medium",
-        durationMin: Math.max(0, (e.endMin ?? 0) - (e.startMin ?? 0)),
+        durationMin: Math.max(
+          0,
+          (e.endMin ?? 0) - (e.startMin ?? 0)
+        ),
         startMin: e.startMin ?? 0
       }));
 
@@ -336,7 +367,11 @@ export default function Planners() {
 
   const weeklySchedule = useMemo(() => {
     const items = allEvents
-      .filter((e) => e.kind === "schedule" && isDateInNext7Days(e.date, todayStr))
+      .filter(
+        (e) =>
+          e.kind === "schedule" &&
+          isDateInNext7Days(e.date, todayStr)
+      )
       .map((e) => ({
         id: e.id,
         title: e.title,
@@ -377,26 +412,40 @@ export default function Planners() {
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") navigate(`/planner/${p.id}`);
+                  if (e.key === "Enter" || e.key === " ")
+                    navigate(`/planner/${p.id}`);
                 }}
                 title="Open planner">
                 <div className="tileInner">
                   <div className="tileTitle">{p.name}</div>
-                  {p.description ? <div className="tileDesc">{p.description}</div> : null}
+                  {p.description ? (
+                    <div className="tileDesc">
+                      {p.description}
+                    </div>
+                  ) : null}
                 </div>
 
-                <div className="tileActions" onClick={(e) => e.stopPropagation()}>
-                  <button type="button" onClick={() => openEdit(p)}>
+                <div
+                  className="tileActions"
+                  onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => openEdit(p)}>
                     Edit
                   </button>
-                  <button type="button" onClick={() => openDeleteConfirm(p)}>
+                  <button
+                    type="button"
+                    onClick={() => openDeleteConfirm(p)}>
                     Delete
                   </button>
                 </div>
               </div>
             ))}
 
-            <button className="plannerTile createTile" type="button" onClick={openCreate}>
+            <button
+              className="plannerTile createTile"
+              type="button"
+              onClick={openCreate}>
               <span className="plus">+</span>
             </button>
           </div>
@@ -407,25 +456,34 @@ export default function Planners() {
           <div className="panelCard">
             <div className="panelHeader">
               <h2>Today’s Tasks</h2>
-              <div className="panelTotal">{todaysTasks.length}</div>
+              <div className="panelTotal">
+                {todaysTasks.length}
+              </div>
             </div>
 
             <div className="panelList">
               {error ? (
                 <div className="emptyState">{error}</div>
               ) : todaysTasks.length === 0 ? (
-                <div className="emptyState">No tasks for today.</div>
+                <div className="emptyState">
+                  No tasks for today.
+                </div>
               ) : (
                 todaysTasks.map((t) => (
                   <div key={t.id} className="panelRow">
                     <div className="rowLeft">
-                      <span className="rowDot" style={{ background: t.plannerColor }} />
+                      <span
+                        className="rowDot"
+                        style={{ background: t.plannerColor }}
+                      />
                       <div className="rowTitle">{t.title}</div>
                       <div className="rowSub">
                         {t.plannerName} • {t.priority}
                       </div>
                     </div>
-                    <div className="rowMeta">{formatDurationMinutes(t.durationMin)}</div>
+                    <div className="rowMeta">
+                      {formatDurationMinutes(t.durationMin)}
+                    </div>
                   </div>
                 ))
               )}
@@ -435,20 +493,27 @@ export default function Planners() {
           <div className="panelCard">
             <div className="panelHeader">
               <h2>Weekly Overview</h2>
-              <div className="panelTotal">{weeklySchedule.length}</div>
+              <div className="panelTotal">
+                {weeklySchedule.length}
+              </div>
             </div>
 
             <div className="panelList">
               {weeklySchedule.length === 0 ? (
-                <div className="emptyState">No schedule in the next 7 days.</div>
+                <div className="emptyState">
+                  No schedule in the next 7 days.
+                </div>
               ) : (
                 weeklySchedule.map((s) => (
                   <div key={s.id} className="panelRow">
                     <div className="rowLeft">
-                      <span className="rowDot" style={{ background: s.plannerColor }} />
+                      <span
+                        className="rowDot"
+                        style={{ background: s.plannerColor }}
+                      />
                       <div className="rowTitle">{s.title}</div>
                       <div className="rowSub">
-                      {s.plannerName} • {s.shortDate}
+                        {s.plannerName} • {s.shortDate}
                       </div>
                     </div>
                     <div className="rowMeta">
@@ -464,10 +529,19 @@ export default function Planners() {
 
       {/* Create/Edit Modal */}
       {plannerModalOpen && (
-        <div className="plannerModal" role="dialog" aria-modal="true" onClick={closeModal}>
+        <div
+          className="plannerModal"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeModal}>
           <div className="plannerModal__backdrop" />
-          <div className="plannerModal__card" onClick={(e) => e.stopPropagation()}>
-            <button className="plannerModal__close" onClick={closeModal} aria-label="Close">
+          <div
+            className="plannerModal__card"
+            onClick={(e) => e.stopPropagation()}>
+            <button
+              className="plannerModal__close"
+              onClick={closeModal}
+              aria-label="Close">
               ✕
             </button>
 
@@ -506,10 +580,18 @@ export default function Planners() {
               />
             </div>
 
-            {formError && <div className="plannerModal__error">{formError}</div>}
+            {formError && (
+              <div className="plannerModal__error">
+                {formError}
+              </div>
+            )}
 
             <div className="plannerModal__actions">
-              <button className="plannerModal__save" type="button" onClick={savePlanner} disabled={saving}>
+              <button
+                className="plannerModal__save"
+                type="button"
+                onClick={savePlanner}
+                disabled={saving}>
                 {saving ? "saving..." : "save"}
               </button>
             </div>
@@ -518,15 +600,31 @@ export default function Planners() {
       )}
 
       {confirmOpen && (
-        <div className="plannerModal" role="dialog" aria-modal="true" onClick={closeDeleteConfirm}>
+        <div
+          className="plannerModal"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeDeleteConfirm}>
           <div className="plannerModal__backdrop" />
-          <div className="plannerModal__card" onClick={(e) => e.stopPropagation()}>
-            <div className="confirmTitle">Are you sure you want to delete?</div>
+          <div
+            className="plannerModal__card"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="confirmTitle">
+              Are you sure you want to delete?
+            </div>
 
-            <input className="plannerModal__title" value={confirmPlanner?.name || ""} readOnly />
+            <input
+              className="plannerModal__title"
+              value={confirmPlanner?.name || ""}
+              readOnly
+            />
 
             <div className="confirmActions">
-              <button className="confirmBtn" type="button" onClick={closeDeleteConfirm} disabled={confirmBusy}>
+              <button
+                className="confirmBtn"
+                type="button"
+                onClick={closeDeleteConfirm}
+                disabled={confirmBusy}>
                 Cancel
               </button>
               <button

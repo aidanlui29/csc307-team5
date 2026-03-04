@@ -210,7 +210,8 @@ body {
 }
 .planner__cell--today {
   background: #171717;
-  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.1),
+  box-shadow:
+    inset 1px 0 0 rgba(255, 255, 255, 0.1),
     inset -1px 0 0 rgba(255, 255, 255, 0.1);
 }
 
@@ -363,10 +364,10 @@ body {
 .plannerModal__field label {
   font-weight: 900;
   opacity: 0.75;
-  font-size: 10px;        /* smaller */
+  font-size: 10px; /* smaller */
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  margin-bottom: 2px;     /* tighter */
+  margin-bottom: 2px; /* tighter */
 }
 
 .plannerModal__field input,
@@ -431,22 +432,22 @@ body {
 /* ---------- Dropdowns for Task Priority/Status ---------- */
 .plannerModal__fieldRow {
   display: flex;
-  gap: 8px;            /* closer together */
+  gap: 8px; /* closer together */
   align-items: center; /* matches buttons */
 }
 
 .plannerModal__selectWrap {
   position: relative;
-  width: auto;            /* key: don’t stretch */
+  width: auto; /* key: don’t stretch */
 }
 
 .plannerModal__select {
   appearance: none;
   border: 1px solid rgba(0, 0, 0, 0.15);
   outline: none;
-  background: #e9e9e9;    /* same vibe as your pills */
+  background: #e9e9e9; /* same vibe as your pills */
   border-radius: 10px;
-  height: 32px;           /* SAME as nav buttons */
+  height: 32px; /* SAME as nav buttons */
   padding: 0 28px 0 10px; /* compact */
   font-weight: 800;
   font-size: 13px;
@@ -615,6 +616,8 @@ body {
 .planner--blurred > *:not(.focusModal) {
   filter: blur(6px);
   opacity: 0.65;
-  transition: filter 0.25s ease, opacity 0.25s ease;
+  transition:
+    filter 0.25s ease,
+    opacity 0.25s ease;
   pointer-events: none;
 }
