@@ -14,9 +14,8 @@ export default function TopBar({ onMenuClick }) {
         position: "sticky",
         top: 0,
         zIndex: 20,
-        boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
-      }}
-    >
+        boxShadow: "0 10px 30px rgba(0,0,0,0.25)"
+      }}>
       <button
         onClick={onMenuClick}
         style={{
@@ -27,9 +26,8 @@ export default function TopBar({ onMenuClick }) {
           background: "rgba(255,255,255,0.08)",
           cursor: "pointer",
           display: "grid",
-          placeItems: "center",
-        }}
-      >
+          placeItems: "center"
+        }}>
         <div style={{ display: "grid", gap: 4 }}>
           <span style={barStyle} />
           <span style={barStyle} />
@@ -48,5 +46,5 @@ const barStyle = {
   width: 18,
   height: 2,
   background: "white",
-  borderRadius: 999,
+  borderRadius: 999
 };

@@ -20,7 +20,9 @@ app.use(express.json());
 function generateAccessToken(user) {
   const secret = process.env.TOKEN_SECRET;
   if (!secret) {
-    throw new Error("TOKEN_SECRET is missing. Check your packages/express-backend/.env");
+    throw new Error(
+      "TOKEN_SECRET is missing. Check your packages/express-backend/.env"
+    );
   }
 
   return jwt.sign(
@@ -35,11 +37,16 @@ function authenticateUser(req, res, next) {
   const token = authHeader && authHeader.split(" ")[1];
   if (!token) return res.status(401).send("Unauthorized");
 
-  jwt.verify(token, process.env.TOKEN_SECRET, (err, decoded) => {
-    if (err || !decoded) return res.status(401).send("Unauthorized");
-    req.user = decoded; // { userId, email, iat, exp }
-    next();
-  });
+  jwt.verify(
+    token,
+    process.env.TOKEN_SECRET,
+    (err, decoded) => {
+      if (err || !decoded)
+        return res.status(401).send("Unauthorized");
+      req.user = decoded; // { userId, email, iat, exp }
+      next();
+    }
+  );
 }
 
 /* =========================
@@ -60,15 +67,22 @@ app.get("/api/me", authenticateUser, (req, res) => {
 app.post("/api/auth/signup", async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).send("Missing email or password");
+    if (!email || !password)
+      return res.status(400).send("Missing email or password");
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    const existing = await User.findOne({ email: normalizedEmail });
-    if (existing) return res.status(409).send("Email already in use");
+    const existing = await User.findOne({
+      email: normalizedEmail
+    });
+    if (existing)
+      return res.status(409).send("Email already in use");
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ email: normalizedEmail, passwordHash });
+    const user = await User.create({
+      email: normalizedEmail,
+      passwordHash
+    });
 
     const token = generateAccessToken(user);
     return res.status(201).json({ token });
@@ -82,14 +96,19 @@ app.post("/api/auth/signup", async (req, res) => {
 app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).send("Missing email or password");
+    if (!email || !password)
+      return res.status(400).send("Missing email or password");
 
     const normalizedEmail = email.toLowerCase().trim();
 
     const user = await User.findOne({ email: normalizedEmail });
-    if (!user) return res.status(401).send("Invalid credentials");
+    if (!user)
+      return res.status(401).send("Invalid credentials");
 
-    const ok = await bcrypt.compare(password, user.passwordHash);
+    const ok = await bcrypt.compare(
+      password,
+      user.passwordHash
+    );
     if (!ok) return res.status(401).send("Invalid credentials");
 
     const token = generateAccessToken(user);
@@ -103,7 +122,9 @@ app.post("/api/auth/login", async (req, res) => {
 let planners = []; // { id, ownerId, name, color, description }
 
 function makeId() {
-  return globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : String(Date.now());
+  return globalThis.crypto?.randomUUID
+    ? globalThis.crypto.randomUUID()
+    : String(Date.now());
 }
 
 app.get("/api/planners", authenticateUser, async (req, res) => {
@@ -111,65 +132,94 @@ app.get("/api/planners", authenticateUser, async (req, res) => {
   res.json(planners.filter((p) => p.ownerId === ownerId));
 });
 
-app.post("/api/planners", authenticateUser, async (req, res) => {
-  const { name, color, description } = req.body;
+app.post(
+  "/api/planners",
+  authenticateUser,
+  async (req, res) => {
+    const { name, color, description } = req.body;
 
-  if (!name || !String(name).trim()) {
-    return res.status(400).send("Planner name is required");
+    if (!name || !String(name).trim()) {
+      return res.status(400).send("Planner name is required");
+    }
+
+    const created = {
+      id: makeId(),
+      ownerId: req.user.userId,
+      name: String(name).trim(),
+      color: color || "#9ca3af",
+      description: description ? String(description) : ""
+    };
+
+    planners.unshift(created);
+    return res.status(201).json(created);
   }
+);
 
-  const created = {
-    id: makeId(),
-    ownerId: req.user.userId,
-    name: String(name).trim(),
-    color: color || "#9ca3af",
-    description: description ? String(description) : "",
-  };
+app.put(
+  "/api/planners/:id",
+  authenticateUser,
+  async (req, res) => {
+    const { id } = req.params;
+    const { name, color, description } = req.body;
 
-  planners.unshift(created);
-  return res.status(201).json(created);
-});
+    const idx = planners.findIndex(
+      (p) => p.id === id && p.ownerId === req.user.userId
+    );
+    if (idx === -1)
+      return res.status(404).send("Planner not found");
 
-app.put("/api/planners/:id", authenticateUser, async (req, res) => {
-  const { id } = req.params;
-  const { name, color, description } = req.body;
+    const updated = {
+      ...planners[idx],
+      name:
+        name !== undefined
+          ? String(name).trim()
+          : planners[idx].name,
+      color: color !== undefined ? color : planners[idx].color,
+      description:
+        description !== undefined
+          ? String(description)
+          : planners[idx].description
+    };
 
-  const idx = planners.findIndex((p) => p.id === id && p.ownerId === req.user.userId);
-  if (idx === -1) return res.status(404).send("Planner not found");
+    if (!updated.name)
+      return res.status(400).send("Planner name is required");
 
-  const updated = {
-    ...planners[idx],
-    name: name !== undefined ? String(name).trim() : planners[idx].name,
-    color: color !== undefined ? color : planners[idx].color,
-    description: description !== undefined ? String(description) : planners[idx].description,
-  };
+    planners[idx] = updated;
+    return res.json(updated);
+  }
+);
 
-  if (!updated.name) return res.status(400).send("Planner name is required");
+app.delete(
+  "/api/planners/:id",
+  authenticateUser,
+  async (req, res) => {
+    const { id } = req.params;
 
-  planners[idx] = updated;
-  return res.json(updated);
-});
+    const before = planners.length;
+    planners = planners.filter(
+      (p) => !(p.id === id && p.ownerId === req.user.userId)
+    );
 
-app.delete("/api/planners/:id", authenticateUser, async (req, res) => {
-  const { id } = req.params;
-
-  const before = planners.length;
-  planners = planners.filter((p) => !(p.id === id && p.ownerId === req.user.userId));
-
-  if (planners.length === before) return res.status(404).send("Planner not found");
-  return res.status(204).send();
-});
+    if (planners.length === before)
+      return res.status(404).send("Planner not found");
+    return res.status(204).send();
+  }
+);
 
 const port = process.env.PORT || 3001;
 
 async function start() {
   try {
     if (!process.env.MONGODB_URI) {
-      throw new Error("MONGODB_URI is missing. Check packages/express-backend/.env");
+      throw new Error(
+        "MONGODB_URI is missing. Check packages/express-backend/.env"
+      );
     }
 
     await connectDb();
-    app.listen(port, () => console.log(`Server running on ${port}`));
+    app.listen(port, () =>
+      console.log(`Server running on ${port}`)
+    );
   } catch (err) {
     console.error("Failed to start:", err);
     process.exit(1);

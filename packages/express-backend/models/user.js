@@ -7,12 +7,12 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       lowercase: true,
-      trim: true,
+      trim: true
     },
     passwordHash: {
       type: String,
-      required: true,
-    },
+      required: true
+    }
   },
   { timestamps: true }
 );

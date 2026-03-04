@@ -18,6 +18,6 @@ export function authHeaders(extraHeaders = {}) {
 
   return {
     ...extraHeaders,
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${token}`
   };
 }

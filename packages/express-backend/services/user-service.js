@@ -5,7 +5,9 @@ import { User } from "../models/user.js";
 async function createUser(email, password) {
   const normalizedEmail = email.toLowerCase().trim();
 
-  const existing = await User.findOne({ email: normalizedEmail });
+  const existing = await User.findOne({
+    email: normalizedEmail
+  });
   if (existing) {
     const err = new Error("Email already in use");
     err.code = "EMAIL_EXISTS";
@@ -13,7 +15,10 @@ async function createUser(email, password) {
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const user = await User.create({ email: normalizedEmail, passwordHash });
+  const user = await User.create({
+    email: normalizedEmail,
+    passwordHash
+  });
 
   return { id: user._id.toString(), email: user.email };
 }
@@ -28,4 +33,8 @@ async function validatePassword(userDoc, password) {
   return bcrypt.compare(password, userDoc.passwordHash);
 }
 
-export default { createUser, findUserByEmail, validatePassword };
+export default {
+  createUser,
+  findUserByEmail,
+  validatePassword
+};

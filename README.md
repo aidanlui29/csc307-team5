@@ -1,11 +1,14 @@
-We are the Lab Rats! This is built off of IE4: Database Integration.
-
-
+We are the Lab Rats! This is built off of IE4: Database
+Integration.
 
 # TE5 – Authentication & Access Control
-This project implements JWT-based authentication using bcrypt for password hashing and Express middleware for protecting backend routes.
+
+This project implements JWT-based authentication using bcrypt
+for password hashing and Express middleware for protecting
+backend routes.
 
 After successful login or signup:
+
 - A JWT token is generated
 - The token is stored on the client
 - Protected routes verify the token before accessing data
@@ -25,7 +28,6 @@ After successful login or signup:
 
 <img src="https://github.com/user-attachments/assets/1e592607-ede1-433c-9514-776c68bed349" width="800"/>
 
-
 ---
 
 ### 3. Protected Planner API Request
@@ -33,7 +35,6 @@ After successful login or signup:
 <img src="https://github.com/user-attachments/assets/e4502666-e6ca-4a4c-8415-45b5852fbd99" width="800"/>
 
 ---
-
 
 ## Security Behavior
 

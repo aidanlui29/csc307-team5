@@ -1,6 +1,10 @@
 import { useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { clearToken } from "./auth"; 
+import {
+  Link,
+  useLocation,
+  useNavigate
+} from "react-router-dom";
+import { clearToken } from "./auth";
 
 export default function MenuDrawer({ open, onClose }) {
   const location = useLocation();
@@ -11,11 +15,12 @@ export default function MenuDrawer({ open, onClose }) {
       if (e.key === "Escape") onClose();
     }
     if (open) window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () =>
+      window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
   function handleLogout() {
-    clearToken(); 
+    clearToken();
     onClose();
     navigate("/login");
   }
@@ -31,9 +36,8 @@ export default function MenuDrawer({ open, onClose }) {
         position: "fixed",
         inset: 0,
         zIndex: 50,
-        background: "rgba(0,0,0,0.45)",
-      }}
-    >
+        background: "rgba(0,0,0,0.45)"
+      }}>
       <aside
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -51,9 +55,8 @@ export default function MenuDrawer({ open, onClose }) {
           display: "flex",
           flexDirection: "column",
           gap: 14,
-          overflowY: "auto",
-        }}
-      >
+          overflowY: "auto"
+        }}>
         <div style={{ fontWeight: 800, fontSize: 18 }}>
           Menu
         </div>
@@ -61,16 +64,14 @@ export default function MenuDrawer({ open, onClose }) {
         <Link
           to="/planners"
           onClick={onClose}
-          style={navStyle(isActive("/planners"))}
-        >
+          style={navStyle(isActive("/planners"))}>
           Planners
         </Link>
 
         <Link
           to="/dashboard"
           onClick={onClose}
-          style={navStyle(isActive("/dashboard"))}
-        >
+          style={navStyle(isActive("/dashboard"))}>
           Dashboard
         </Link>
 
@@ -91,7 +92,7 @@ function navStyle(active) {
     background: active
       ? "rgba(255,255,255,0.25)"
       : "rgba(255,255,255,0.15)",
-    fontWeight: 600,
+    fontWeight: 600
   };
 }
 
@@ -103,5 +104,5 @@ const logoutStyle = {
   background: "rgba(255,255,255,0.18)",
   color: "white",
   fontWeight: 600,
-  cursor: "pointer",
+  cursor: "pointer"
 };

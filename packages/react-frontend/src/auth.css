@@ -1,8 +1,13 @@
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
 }
 
 .auth {
@@ -13,8 +18,17 @@ html, body {
   justify-content: center;
 
   background:
-    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.12), transparent 40%),
-    linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(255, 255, 255, 0.12),
+      transparent 40%
+    ),
+    linear-gradient(
+      135deg,
+      #0f2027 0%,
+      #203a43 50%,
+      #2c5364 100%
+    );
 }
 
 .auth__brand {

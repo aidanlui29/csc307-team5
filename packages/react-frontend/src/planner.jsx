@@ -1,4 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
 import { useParams } from "react-router-dom";
 import "./planner.css";
 
@@ -27,15 +32,23 @@ function sameDay(a, b) {
 }
 function monthTitleForWeek(weekStart) {
   const weekEnd = addDays(weekStart, 6);
-  const startMonth = weekStart.toLocaleString(undefined, { month: "long" });
-  const endMonth = weekEnd.toLocaleString(undefined, { month: "long" });
+  const startMonth = weekStart.toLocaleString(undefined, {
+    month: "long"
+  });
+  const endMonth = weekEnd.toLocaleString(undefined, {
+    month: "long"
+  });
   const startYear = weekStart.getFullYear();
   const endYear = weekEnd.getFullYear();
 
-  if (weekStart.getMonth() === weekEnd.getMonth() && startYear === endYear) {
+  if (
+    weekStart.getMonth() === weekEnd.getMonth() &&
+    startYear === endYear
+  ) {
     return `${startMonth} ${startYear}`;
   }
-  if (startYear === endYear) return `${startMonth} – ${endMonth} ${startYear}`;
+  if (startYear === endYear)
+    return `${startMonth} – ${endMonth} ${startYear}`;
   return `${startMonth} ${startYear} – ${endMonth} ${endYear}`;
 }
 function formatHour(hour24) {
@@ -66,9 +79,19 @@ function storageKey(id) {
 export default function Planner() {
   const { id } = useParams();
 
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayNames = [
+    "Sun",
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat"
+  ];
 
-  const [anchorDate, setAnchorDate] = useState(() => new Date());
+  const [anchorDate, setAnchorDate] = useState(
+    () => new Date()
+  );
   const [now, setNow] = useState(() => new Date());
 
   const [events, setEvents] = useState(() => {
@@ -90,7 +113,10 @@ export default function Planner() {
   }, [id]);
 
   useEffect(() => {
-    localStorage.setItem(storageKey(id), JSON.stringify(events));
+    localStorage.setItem(
+      storageKey(id),
+      JSON.stringify(events)
+    );
   }, [events, id]);
 
   const [focusOpen, setFocusOpen] = useState(false);
@@ -98,15 +124,18 @@ export default function Planner() {
   const WORK_SECONDS = 25 * 60;
   const BREAK_SECONDS = 5 * 60;
 
-  const [durationSec, setDurationSec] = useState(WORK_SECONDS);
-  const [remainingSec, setRemainingSec] = useState(WORK_SECONDS);
+  // underscore prefix to satisfy eslint unused-vars rule without changing behavior
+  const [_durationSec, setDurationSec] = useState(WORK_SECONDS);
+  const [remainingSec, setRemainingSec] =
+    useState(WORK_SECONDS);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef(null);
 
   function openFocus() {
     setFocusOpen(true);
     setIsRunning(false);
-    const d = focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
+    const d =
+      focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
     setDurationSec(d);
     setRemainingSec(d);
   }
@@ -139,7 +168,8 @@ export default function Planner() {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
 
-    const d = focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
+    const d =
+      focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
     setDurationSec(d);
     setRemainingSec(d);
   }
@@ -178,12 +208,19 @@ export default function Planner() {
 
   const [selectedEventId, setSelectedEventId] = useState(null);
 
-  const today = useMemo(() => new Date(), [now]);
+  // Keep behavior: today updates whenever "now" updates.
+  const today = now;
   const todayIndex = today.getDay();
 
-  const weekStart = useMemo(() => startOfWeek(anchorDate), [anchorDate]);
+  const weekStart = useMemo(
+    () => startOfWeek(anchorDate),
+    [anchorDate]
+  );
   const weekDates = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    () =>
+      Array.from({ length: 7 }, (_, i) =>
+        addDays(weekStart, i)
+      ),
     [weekStart]
   );
   const isCurrentWeek = useMemo(() => {
@@ -194,7 +231,11 @@ export default function Planner() {
   const START_HOUR = 0;
   const END_HOUR = 23;
   const hours = useMemo(
-    () => Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => i + START_HOUR),
+    () =>
+      Array.from(
+        { length: END_HOUR - START_HOUR + 1 },
+        (_, i) => i + START_HOUR
+      ),
     []
   );
 
@@ -216,14 +257,16 @@ export default function Planner() {
 
     computeLayout();
     window.addEventListener("resize", computeLayout);
-    return () => window.removeEventListener("resize", computeLayout);
+    return () =>
+      window.removeEventListener("resize", computeLayout);
   }, []);
 
   const [nowLineStyle, setNowLineStyle] = useState(null);
   useEffect(() => {
     const tick = () => setNow(new Date());
     const msToNextMinute =
-      (60 - new Date().getSeconds()) * 1000 - new Date().getMilliseconds();
+      (60 - new Date().getSeconds()) * 1000 -
+      new Date().getMilliseconds();
 
     const t = setTimeout(() => {
       tick();
@@ -233,7 +276,8 @@ export default function Planner() {
 
     return () => {
       clearTimeout(t);
-      if (window.__plannerNowInterval) clearInterval(window.__plannerNowInterval);
+      if (window.__plannerNowInterval)
+        clearInterval(window.__plannerNowInterval);
       window.__plannerNowInterval = null;
     };
   }, []);
@@ -245,33 +289,46 @@ export default function Planner() {
       return;
     }
 
-    const minutesIntoDay = now.getHours() * 60 + now.getMinutes();
+    const minutesIntoDay =
+      now.getHours() * 60 + now.getMinutes();
     const startMinutes = START_HOUR * 60;
     const endMinutes = (END_HOUR + 1) * 60;
-    if (minutesIntoDay < startMinutes || minutesIntoDay > endMinutes) {
+    if (
+      minutesIntoDay < startMinutes ||
+      minutesIntoDay > endMinutes
+    ) {
       setNowLineStyle(null);
       return;
     }
 
     const grid = gridRef.current;
-    const todayHeaderEl = grid.querySelector(`[data-day-index="${todayIndex}"]`);
+    const todayHeaderEl = grid.querySelector(
+      `[data-day-index="${todayIndex}"]`
+    );
     if (!todayHeaderEl) return;
 
     const gridRect = grid.getBoundingClientRect();
     const todayRect = todayHeaderEl.getBoundingClientRect();
 
     const minutesFromStart = minutesIntoDay - startMinutes;
-    const top = layout.headerH + (minutesFromStart / 60) * layout.rowH;
+    const top =
+      layout.headerH + (minutesFromStart / 60) * layout.rowH;
 
     const left = todayRect.left - gridRect.left;
     const width = todayRect.width;
 
-    setNowLineStyle({ top: `${top}px`, left: `${left}px`, width: `${width}px` });
+    setNowLineStyle({
+      top: `${top}px`,
+      left: `${left}px`,
+      width: `${width}px`
+    });
   }, [now, isCurrentWeek, todayIndex, layout]);
 
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState("schedule");
-  const [dateStr, setDateStr] = useState(() => toDateInputValue(new Date()));
+  const [dateStr, setDateStr] = useState(() =>
+    toDateInputValue(new Date())
+  );
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
   const [desc, setDesc] = useState("");
@@ -311,25 +368,33 @@ export default function Planner() {
   function handleSave() {
     setFormError("");
 
-    if (!title.trim()) return setFormError("Please enter a title.");
+    if (!title.trim())
+      return setFormError("Please enter a title.");
 
     const sMin = timeToMinutes(startTime);
     const eMin = timeToMinutes(endTime);
-    if (eMin <= sMin) return setFormError("End time must be after start time.");
+    if (eMin <= sMin)
+      return setFormError("End time must be after start time.");
 
     const newEvent = {
-      id: editingId ?? (crypto?.randomUUID ? crypto.randomUUID() : String(Date.now())),
+      id:
+        editingId ??
+        (crypto?.randomUUID
+          ? crypto.randomUUID()
+          : String(Date.now())),
       title: title.trim(),
       kind,
       date: dateStr,
       startMin: sMin,
       endMin: eMin,
-      desc: desc.trim(),
+      desc: desc.trim()
     };
 
     setEvents((prev) => {
       if (!editingId) return [...prev, newEvent];
-      return prev.map((p) => (p.id === editingId ? newEvent : p));
+      return prev.map((p) =>
+        p.id === editingId ? newEvent : p
+      );
     });
 
     closeAdd();
@@ -344,28 +409,36 @@ export default function Planner() {
     if (!layout || !gridRef.current) return { display: "none" };
 
     const selectedDate = new Date(`${ev.date}T00:00:00`);
-    const inThisWeek = weekDates.some((d) => sameDay(d, selectedDate));
+    const inThisWeek = weekDates.some((d) =>
+      sameDay(d, selectedDate)
+    );
     if (!inThisWeek) return { display: "none" };
 
-    const dayIdx = weekDates.findIndex((d) => sameDay(d, selectedDate));
+    const dayIdx = weekDates.findIndex((d) =>
+      sameDay(d, selectedDate)
+    );
     if (dayIdx < 0) return { display: "none" };
 
     const gridRect = gridRef.current.getBoundingClientRect();
-    const dayHeaderEl = gridRef.current.querySelector(`[data-day-index="${dayIdx}"]`);
+    const dayHeaderEl = gridRef.current.querySelector(
+      `[data-day-index="${dayIdx}"]`
+    );
     if (!dayHeaderEl) return { display: "none" };
 
     const dayRect = dayHeaderEl.getBoundingClientRect();
     const left = dayRect.left - gridRect.left;
     const width = dayRect.width;
 
-    const top = layout.headerH + (ev.startMin / 60) * layout.rowH;
-    const height = ((ev.endMin - ev.startMin) / 60) * layout.rowH;
+    const top =
+      layout.headerH + (ev.startMin / 60) * layout.rowH;
+    const height =
+      ((ev.endMin - ev.startMin) / 60) * layout.rowH;
 
     return {
       left: `${left + 8}px`,
       top: `${top + 2}px`,
       width: `${width - 16}px`,
-      height: `${Math.max(28, height - 4)}px`,
+      height: `${Math.max(28, height - 4)}px`
     };
   }
 
@@ -383,17 +456,28 @@ export default function Planner() {
     let left = leftNum + parseFloat(s.width) + 12;
     let top = topNum;
 
-    if (left + popW > gridW - 8) left = Math.max(8, leftNum - popW - 12);
+    if (left + popW > gridW - 8)
+      left = Math.max(8, leftNum - popW - 12);
     if (top < 70) top = 70;
 
-    return { left: `${left}px`, top: `${top}px`, width: `${popW}px` };
+    return {
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${popW}px`
+    };
   }
 
-  const selectedEvent = selectedEventId ? events.find((e) => e.id === selectedEventId) : null;
+  const selectedEvent = selectedEventId
+    ? events.find((e) => e.id === selectedEventId)
+    : null;
 
   return (
-    <div className="planner" onClick={() => setSelectedEventId(null)}>
-      <div className="planner__topbar" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="planner"
+      onClick={() => setSelectedEventId(null)}>
+      <div
+        className="planner__topbar"
+        onClick={(e) => e.stopPropagation()}>
         <div className="planner__left">
           <button
             className="planner__menuIcon"
@@ -401,40 +485,64 @@ export default function Planner() {
             aria-label="Open menu"
             onClick={(e) => {
               e.stopPropagation();
-              window.dispatchEvent(new CustomEvent("clockedIn:openMenu"));
-            }}
-          >
+              window.dispatchEvent(
+                new CustomEvent("clockedIn:openMenu")
+              );
+            }}>
             <span className="planner__hamburgerLine" />
             <span className="planner__hamburgerLine" />
             <span className="planner__hamburgerLine" />
           </button>
 
           <div className="planner__nav">
-            <button className="planner__navbtn" onClick={() => setAnchorDate((d) => addWeeks(d, -1))} type="button">
+            <button
+              className="planner__navbtn"
+              onClick={() =>
+                setAnchorDate((d) => addWeeks(d, -1))
+              }
+              type="button">
               ◀
             </button>
-            <button className="planner__navbtn" onClick={() => setAnchorDate(new Date())} type="button">
+            <button
+              className="planner__navbtn"
+              onClick={() => setAnchorDate(new Date())}
+              type="button">
               Today
             </button>
-            <button className="planner__navbtn" onClick={() => setAnchorDate((d) => addWeeks(d, 1))} type="button">
+            <button
+              className="planner__navbtn"
+              onClick={() =>
+                setAnchorDate((d) => addWeeks(d, 1))
+              }
+              type="button">
               ▶
             </button>
           </div>
         </div>
 
-        <div className="planner__monthTitle">{monthTitleForWeek(weekStart)}</div>
+        <div className="planner__monthTitle">
+          {monthTitleForWeek(weekStart)}
+        </div>
 
         <div className="planner__actions">
-          <button className="planner__add" type="button" onClick={openAddNew}>
+          <button
+            className="planner__add"
+            type="button"
+            onClick={openAddNew}>
             + add
           </button>
-          <button className="planner__focus" type="button" onClick={openFocus}>
+          <button
+            className="planner__focus"
+            type="button"
+            onClick={openFocus}>
             focus
           </button>
         </div>
       </div>
 
-      <div className="planner__scrollArea" onClick={() => setSelectedEventId(null)}>
+      <div
+        className="planner__scrollArea"
+        onClick={() => setSelectedEventId(null)}>
         <div className="planner__gridwrap" ref={gridRef}>
           <div className="planner__header">
             <div className="planner__timecol" />
@@ -443,49 +551,77 @@ export default function Planner() {
                 key={idx}
                 data-day-index={idx}
                 className={`planner__dayheader ${
-                  isCurrentWeek && idx === todayIndex ? "planner__dayheader--today" : ""
-                }`}
-              >
-                <div className="planner__daydate">{d.getDate()}</div>
-                <div className="planner__dayname">{dayNames[idx]}</div>
+                  isCurrentWeek && idx === todayIndex
+                    ? "planner__dayheader--today"
+                    : ""
+                }`}>
+                <div className="planner__daydate">
+                  {d.getDate()}
+                </div>
+                <div className="planner__dayname">
+                  {dayNames[idx]}
+                </div>
               </div>
             ))}
           </div>
 
-          {nowLineStyle && <div className="planner__nowLine" style={nowLineStyle} aria-hidden="true" />}
+          {nowLineStyle && (
+            <div
+              className="planner__nowLine"
+              style={nowLineStyle}
+              aria-hidden="true"
+            />
+          )}
 
+          {/* eslint-disable-next-line react-hooks/refs */}
           {events.map((ev) => (
             <div
               key={ev.id}
-              className={`planner__event ${ev.kind === "schedule" ? "planner__event--schedule" : "planner__event--task"}`}
+              className={`planner__event ${
+                ev.kind === "schedule"
+                  ? "planner__event--schedule"
+                  : "planner__event--task"
+              }`}
               style={getEventStyle(ev)}
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedEventId(ev.id);
               }}
-              title={ev.desc || ev.title}
-            >
-              <div className="planner__eventTitle">{ev.title}</div>
+              title={ev.desc || ev.title}>
+              <div className="planner__eventTitle">
+                {ev.title}
+              </div>
             </div>
           ))}
 
           {selectedEvent && (
-            <div className="plannerPopover" style={getPopoverStyle(selectedEvent)} onClick={(e) => e.stopPropagation()}>
-              <div className="plannerPopover__title">{selectedEvent.title}</div>
+            <div
+              className="plannerPopover"
+              // eslint-disable-next-line react-hooks/refs
+              style={getPopoverStyle(selectedEvent)}
+              onClick={(e) => e.stopPropagation()}>
+              <div className="plannerPopover__title">
+                {selectedEvent.title}
+              </div>
               <div className="plannerPopover__desc">
-                {selectedEvent.desc ? selectedEvent.desc : "description..."}
+                {selectedEvent.desc
+                  ? selectedEvent.desc
+                  : "description..."}
               </div>
 
               <div className="plannerPopover__actions">
-                <button className="plannerPopover__iconBtn" type="button" title="Edit" onClick={() => openEdit(selectedEvent)}>
+                <button
+                  className="plannerPopover__iconBtn"
+                  type="button"
+                  title="Edit"
+                  onClick={() => openEdit(selectedEvent)}>
                   ✎
                 </button>
                 <button
                   className="plannerPopover__iconBtn plannerPopover__iconBtn--danger"
                   type="button"
                   title="Delete"
-                  onClick={() => deleteEvent(selectedEvent.id)}
-                >
+                  onClick={() => deleteEvent(selectedEvent.id)}>
                   🗑
                 </button>
               </div>
@@ -494,11 +630,17 @@ export default function Planner() {
 
           {hours.map((hour) => (
             <div key={hour} className="planner__row">
-              <div className="planner__time">{formatHour(hour)}</div>
+              <div className="planner__time">
+                {formatHour(hour)}
+              </div>
               {weekDates.map((_, idx) => (
                 <div
                   key={`${idx}-${hour}`}
-                  className={`planner__cell ${isCurrentWeek && idx === todayIndex ? "planner__cell--today" : ""}`}
+                  className={`planner__cell ${
+                    isCurrentWeek && idx === todayIndex
+                      ? "planner__cell--today"
+                      : ""
+                  }`}
                 />
               ))}
             </div>
@@ -507,10 +649,19 @@ export default function Planner() {
       </div>
 
       {addOpen && (
-        <div className="plannerModal" role="dialog" aria-modal="true" onClick={closeAdd}>
+        <div
+          className="plannerModal"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeAdd}>
           <div className="plannerModal__backdrop" />
-          <div className="plannerModal__card" onClick={(e) => e.stopPropagation()}>
-            <button className="plannerModal__close" onClick={closeAdd} aria-label="Close">
+          <div
+            className="plannerModal__card"
+            onClick={(e) => e.stopPropagation()}>
+            <button
+              className="plannerModal__close"
+              onClick={closeAdd}
+              aria-label="Close">
               ✕
             </button>
 
@@ -531,15 +682,13 @@ export default function Planner() {
                 <button
                   type="button"
                   className={`plannerModal__pill ${kind === "schedule" ? "is-active is-schedule" : ""}`}
-                  onClick={() => setKind("schedule")}
-                >
+                  onClick={() => setKind("schedule")}>
                   schedule
                 </button>
                 <button
                   type="button"
                   className={`plannerModal__pill ${kind === "task" ? "is-active is-task" : ""}`}
-                  onClick={() => setKind("task")}
-                >
+                  onClick={() => setKind("task")}>
                   task
                 </button>
               </div>
@@ -548,28 +697,53 @@ export default function Planner() {
             <div className="plannerModal__row plannerModal__row--stack">
               <div className="plannerModal__field">
                 <label>Date</label>
-                <input type="date" value={dateStr} onChange={(e) => setDateStr(e.target.value)} />
+                <input
+                  type="date"
+                  value={dateStr}
+                  onChange={(e) => setDateStr(e.target.value)}
+                />
               </div>
 
               <div className="plannerModal__field plannerModal__field--times">
                 <label>Time</label>
                 <div className="plannerModal__times">
-                  <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+                  <input
+                    type="time"
+                    value={startTime}
+                    onChange={(e) =>
+                      setStartTime(e.target.value)
+                    }
+                  />
                   <span className="plannerModal__dash">–</span>
-                  <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+                  <input
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                  />
                 </div>
               </div>
             </div>
 
             <div className="plannerModal__field">
               <label>Description</label>
-              <textarea placeholder="description..." value={desc} onChange={(e) => setDesc(e.target.value)} />
+              <textarea
+                placeholder="description..."
+                value={desc}
+                onChange={(e) => setDesc(e.target.value)}
+              />
             </div>
 
-            {formError && <div className="plannerModal__error">{formError}</div>}
+            {formError && (
+              <div className="plannerModal__error">
+                {formError}
+              </div>
+            )}
 
             <div className="plannerModal__actions">
-              <button className="plannerModal__save" type="button" onClick={handleSave}>
+              <button
+                className="plannerModal__save"
+                type="button"
+                onClick={handleSave}>
                 save
               </button>
             </div>
@@ -578,38 +752,52 @@ export default function Planner() {
       )}
 
       {focusOpen && (
-        <div className="focusModal" role="dialog" aria-modal="true" onClick={closeFocus}>
+        <div
+          className="focusModal"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeFocus}>
           <div className="focusModal__backdrop" />
-          <div className="focusModal__card" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="focusModal__card"
+            onClick={(e) => e.stopPropagation()}>
             <div className="focusModal__top">
               <button
                 type="button"
                 className={`focusModal__pill ${focusMode === "work" ? "is-active" : ""}`}
-                onClick={() => setMode("work")}
-              >
+                onClick={() => setMode("work")}>
                 work timer
               </button>
               <button
                 type="button"
                 className={`focusModal__pill ${focusMode === "break" ? "is-active" : ""}`}
-                onClick={() => setMode("break")}
-              >
+                onClick={() => setMode("break")}>
                 break timer
               </button>
             </div>
 
             <div className="focusModal__circleWrap">
               <div className="focusModal__circle">
-                <div className="focusModal__time">{formatMMSS(remainingSec)}</div>
+                <div className="focusModal__time">
+                  {formatMMSS(remainingSec)}
+                </div>
               </div>
             </div>
 
             <div className="focusModal__btns">
-              <button type="button" className="focusModal__btn" onClick={() => (isRunning ? setIsRunning(false) : startTimer())}>
+              <button
+                type="button"
+                className="focusModal__btn"
+                onClick={() =>
+                  isRunning ? setIsRunning(false) : startTimer()
+                }>
                 {isRunning ? "PAUSE" : "START"}
               </button>
 
-              <button type="button" className="focusModal__btn" onClick={endTimer}>
+              <button
+                type="button"
+                className="focusModal__btn"
+                onClick={endTimer}>
                 END
               </button>
             </div>

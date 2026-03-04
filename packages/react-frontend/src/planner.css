@@ -53,7 +53,7 @@ body {
   transform: translateY(1px);
 }
 
-.planner__menuIcon .planner__hamburgerLine{
+.planner__menuIcon .planner__hamburgerLine {
   margin-top: 3px;
 }
 
@@ -148,8 +148,8 @@ body {
 .planner__header {
   position: sticky;
   top: 0;
-  z-index: 30;             
-  background: #1c1c1c;     
+  z-index: 30;
+  background: #1c1c1c;
   box-shadow: 0 2px 0 rgba(255, 255, 255, 0.06);
 }
 
@@ -186,9 +186,9 @@ body {
 /* Time labels */
 .planner__time {
   height: 60px;
-  border-right: 1px solid rgba(255, 255, 255, 0.10);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.70);
+  color: rgba(255, 255, 255, 0.7);
   display: flex;
   align-items: center;
   padding-left: 16px;
@@ -210,8 +210,9 @@ body {
 }
 .planner__cell--today {
   background: #171717;
-  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.10),
-    inset -1px 0 0 rgba(255, 255, 255, 0.10);
+  box-shadow:
+    inset 1px 0 0 rgba(255, 255, 255, 0.1),
+    inset -1px 0 0 rgba(255, 255, 255, 0.1);
 }
 
 /* Now line */
@@ -219,7 +220,7 @@ body {
   position: absolute;
   height: 2px;
   background: #ff2e2e;
-  z-index: 25;              /* BELOW header (30) */
+  z-index: 25; /* BELOW header (30) */
   pointer-events: none;
   box-shadow: 0 0 8px rgba(255, 46, 46, 0.35);
 }
@@ -227,7 +228,7 @@ body {
 /* Event blocks ("tabs") */
 .planner__event {
   position: absolute;
-  z-index: 20;              
+  z-index: 20;
   border-radius: 10px;
   padding: 10px 12px;
   box-sizing: border-box;
@@ -326,7 +327,7 @@ body {
 
 .plannerModal__row--stack {
   align-items: flex-end;
-  flex-wrap: nowrap; 
+  flex-wrap: nowrap;
   gap: 16px;
 }
 
@@ -448,7 +449,7 @@ body {
 
 .plannerPopover {
   position: absolute;
-  z-index: 40;            
+  z-index: 40;
   background: #ffffff;
   color: #111;
   border-radius: 16px;

@@ -29,7 +29,9 @@
   border: none;
   background: #e5e7eb;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
-  transition: transform 120ms ease, box-shadow 120ms ease;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
   text-align: left;
   cursor: pointer;
   position: relative;

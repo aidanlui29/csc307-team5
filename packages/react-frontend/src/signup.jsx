@@ -19,7 +19,7 @@ export default function Signup() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password })
       });
 
       if (!res.ok) {
@@ -74,7 +74,10 @@ export default function Signup() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          <button type="submit" className="auth__btn" disabled={loading}>
+          <button
+            type="submit"
+            className="auth__btn"
+            disabled={loading}>
             {loading ? "Creating account..." : "Create account"}
           </button>
         </form>
@@ -85,9 +88,8 @@ export default function Signup() {
           style={{
             color: "white",
             fontSize: "14px",
-            fontWeight: 500,
-          }}
-        >
+            fontWeight: 500
+          }}>
           Have an account?{" "}
         </span>
 
@@ -101,9 +103,8 @@ export default function Signup() {
             cursor: "pointer",
             color: "#3b82f6",
             fontSize: "14px",
-            fontWeight: 500,
-          }}
-        >
+            fontWeight: 500
+          }}>
           Login
         </button>
       </div>

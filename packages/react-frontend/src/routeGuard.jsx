@@ -6,7 +6,9 @@ const AUTH_ME_URL = "/api/me";
 
 export default function RouteGuard() {
   const token = getToken();
-  const [status, setStatus] = useState(token ? "checking" : "missing");
+  const [status, setStatus] = useState(
+    token ? "checking" : "missing"
+  );
 
   useEffect(() => {
     if (!token) return;
@@ -16,7 +18,7 @@ export default function RouteGuard() {
     async function verify() {
       try {
         const res = await fetch(AUTH_ME_URL, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}` }
         });
 
         if (cancelled) return;
@@ -45,8 +47,10 @@ export default function RouteGuard() {
     };
   }, [token]);
 
-  if (status === "missing") return <Navigate to="/login" replace />;
+  if (status === "missing")
+    return <Navigate to="/login" replace />;
   if (status === "checking") return null;
-  if (status === "invalid") return <Navigate to="/login" replace />;
+  if (status === "invalid")
+    return <Navigate to="/login" replace />;
   return <Outlet />;
 }

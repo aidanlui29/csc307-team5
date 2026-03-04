@@ -1,4 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet
+} from "react-router-dom";
 import { useEffect, useState } from "react";
 
 import Login from "./login.jsx";
@@ -17,7 +23,10 @@ function Layout() {
   return (
     <div style={{ minHeight: "100vh" }}>
       <TopBar onMenuClick={() => setMenuOpen(true)} />
-      <MenuDrawer open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <MenuDrawer
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
 
       <div>
         <Outlet />
@@ -32,12 +41,16 @@ function DrawerOnlyLayout() {
   useEffect(() => {
     const onOpen = () => setMenuOpen(true);
     window.addEventListener("clockedIn:openMenu", onOpen);
-    return () => window.removeEventListener("clockedIn:openMenu", onOpen);
+    return () =>
+      window.removeEventListener("clockedIn:openMenu", onOpen);
   }, []);
 
   return (
     <div style={{ minHeight: "100vh" }}>
-      <MenuDrawer open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <MenuDrawer
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
       <Outlet />
     </div>
   );
@@ -47,7 +60,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route
+          path="/"
+          element={<Navigate to="/login" replace />}
+        />
 
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
@@ -63,7 +79,10 @@ export default function App() {
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route
+          path="*"
+          element={<Navigate to="/login" replace />}
+        />
       </Routes>
     </BrowserRouter>
   );

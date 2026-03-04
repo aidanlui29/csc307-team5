@@ -23,7 +23,7 @@ export default function Login() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password })
       });
 
       if (!res.ok) {
@@ -39,7 +39,7 @@ export default function Login() {
       }
 
       const verifyRes = await fetch(AUTH_ME_URL, {
-        headers: { Authorization: `Bearer ${data.token}` },
+        headers: { Authorization: `Bearer ${data.token}` }
       });
 
       if (!verifyRes.ok) {
@@ -62,7 +62,9 @@ export default function Login() {
 
       <div className="auth__card">
         <h1 className="auth__title">Welcome</h1>
-        <p className="auth__subtitle">Please enter your email and password</p>
+        <p className="auth__subtitle">
+          Please enter your email and password
+        </p>
 
         {error && <div className="auth__error">{error}</div>}
 
@@ -85,7 +87,10 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          <button type="submit" className="auth__btn" disabled={loading}>
+          <button
+            type="submit"
+            className="auth__btn"
+            disabled={loading}>
             {loading ? "Logging in..." : "Continue"}
           </button>
         </form>
@@ -97,9 +102,8 @@ export default function Login() {
           style={{
             color: "white",
             fontSize: "14px",
-            fontWeight: 500,
-          }}
-        >
+            fontWeight: 500
+          }}>
           Don’t have an account?{" "}
         </span>
 
@@ -113,9 +117,8 @@ export default function Login() {
             cursor: "pointer",
             color: "#3b82f6",
             fontSize: "14px",
-            fontWeight: 500,
-          }}
-        >
+            fontWeight: 500
+          }}>
           Create account
         </button>
       </div>
