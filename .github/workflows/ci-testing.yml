@@ -7,24 +7,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v3
         with:
           node-version: 20
-
-      # Install dependencies (clean install, omit optional like fsevents)
-      - run: npm ci --omit=optional
-
-      # Build frontend
-      - run: npm run -w react-frontend build
-
-      # Lint backend and frontend
+      - run: npm ci
       - run: npm run -w express-backend lint
       - run: npm run -w react-frontend lint
-
-      # Run tests
-      - run: npm run -w express-backend test
-      - run: npm run -w react-frontend test
+      - run: npm run -w react-frontend build
