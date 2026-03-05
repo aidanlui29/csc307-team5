@@ -162,7 +162,7 @@ app.post("/api/auth/signup", async (req, res) => {
     return res.status(201).json({ token });
   } catch (err) {
     console.error(err);
-    return res.status(500).send("Server error");
+    return res.status(500).send(err?.message || String(err));
   }
 });
 
@@ -188,7 +188,7 @@ app.post("/api/auth/login", async (req, res) => {
     return res.status(200).json({ token });
   } catch (err) {
     console.error(err);
-    return res.status(500).send("Server error");
+    return res.status(500).send(err?.message || String(err));
   }
 });
 
@@ -202,10 +202,9 @@ app.get("/api/planners", authenticateUser, async (req, res) => {
     const docs = await Planner.find({ ownerId }).sort({
       createdAt: -1
     });
-    return res.json(docs.map(normalizePlanner));
   } catch (err) {
     console.error(err);
-    return res.status(500).send("Server error");
+    return res.status(500).send(err?.message || String(err));
   }
 });
 
@@ -230,7 +229,7 @@ app.post(
       return res.status(201).json(normalizePlanner(created));
     } catch (err) {
       console.error(err);
-      return res.status(500).send("Server error");
+      return res.status(500).send(err?.message || String(err));
     }
   }
 );
