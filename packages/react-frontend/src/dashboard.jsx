@@ -1,4 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { authHeaders } from "./auth.jsx";
 import "./dashboard.css";
@@ -21,7 +26,9 @@ function computeDueLabel(dateStr) {
   const d = new Date(`${dateStr}T00:00:00`);
   today.setHours(0, 0, 0, 0);
 
-  const diffDays = Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const diffDays = Math.round(
+    (d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+  );
   if (diffDays === 0) return "Do Today";
   if (diffDays === 1) return "Do Tomorrow";
   if (diffDays > 1) return `Do in ${diffDays} Days`;
@@ -49,14 +56,16 @@ export default function Dashboard() {
   const BREAK_SECONDS = 5 * 60;
 
   const [_durationSec, setDurationSec] = useState(WORK_SECONDS);
-  const [remainingSec, setRemainingSec] = useState(WORK_SECONDS);
+  const [remainingSec, setRemainingSec] =
+    useState(WORK_SECONDS);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef(null);
 
   function openFocus() {
     setFocusOpen(true);
     setIsRunning(false);
-    const d = focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
+    const d =
+      focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
     setDurationSec(d);
     setRemainingSec(d);
   }
@@ -89,7 +98,8 @@ export default function Dashboard() {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
 
-    const d = focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
+    const d =
+      focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
     setDurationSec(d);
     setRemainingSec(d);
   }
@@ -137,11 +147,16 @@ export default function Dashboard() {
         // 2) store last-opened plannerId in localStorage and read it here.
         if (!plannerId) {
           setEvents([]);
-          setPageError("No planner selected for dashboard. (Route may need /dashboard/:id)");
+          setPageError(
+            "No planner selected for dashboard. (Route may need /dashboard/:id)"
+          );
           return;
         }
 
-        const res = await fetch(`/api/planners/${plannerId}/events`, { headers: authHeaders() });
+        const res = await fetch(
+          `/api/planners/${plannerId}/events`,
+          { headers: authHeaders() }
+        );
 
         if (res.status === 401) {
           navigate("/login");
@@ -153,9 +168,14 @@ export default function Dashboard() {
         }
 
         const data = await res.json();
-        if (!cancelled) setEvents(Array.isArray(data) ? data : []);
+        if (!cancelled)
+          setEvents(Array.isArray(data) ? data : []);
       } catch (e) {
-        if (!cancelled) setPageError(e?.message || "Network error. Is the backend running?");
+        if (!cancelled)
+          setPageError(
+            e?.message ||
+              "Network error. Is the backend running?"
+          );
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -168,18 +188,24 @@ export default function Dashboard() {
   }, [plannerId, navigate]);
 
   // Dashboard focuses on tasks (not schedules)
-  const tasks = useMemo(() => events.filter((e) => e.kind === "task"), [events]);
+  const tasks = useMemo(
+    () => events.filter((e) => e.kind === "task"),
+    [events]
+  );
 
   const filteredTasks = useMemo(() => {
     const q = query.trim().toLowerCase();
     const base = q
-      ? tasks.filter((t) => (t.title || "").toLowerCase().includes(q))
+      ? tasks.filter((t) =>
+          (t.title || "").toLowerCase().includes(q)
+        )
       : tasks.slice();
 
     const priorityRank = { high: 0, medium: 1, low: 2 };
 
     base.sort((a, b) => {
-      if (sortBy === "date") return (a.date || "").localeCompare(b.date || "");
+      if (sortBy === "date")
+        return (a.date || "").localeCompare(b.date || "");
       // default: priority first, then date
       const pa = priorityRank[a.priority || "medium"] ?? 1;
       const pb = priorityRank[b.priority || "medium"] ?? 1;
@@ -216,8 +242,11 @@ export default function Dashboard() {
             className="dash__menuBtn"
             type="button"
             aria-label="Open menu"
-            onClick={() => window.dispatchEvent(new CustomEvent("clockedIn:openMenu"))}
-          >
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent("clockedIn:openMenu")
+              )
+            }>
             <span className="dash__hamburger" />
             <span className="dash__hamburger" />
             <span className="dash__hamburger" />
@@ -243,7 +272,9 @@ export default function Dashboard() {
             <div className="dashStatIcon">👥</div>
             <div>
               <div className="dashStatLabel">Total Tasks</div>
-              <div className="dashStatValue">{tasks.length}</div>
+              <div className="dashStatValue">
+                {tasks.length}
+              </div>
             </div>
           </div>
 
@@ -251,15 +282,21 @@ export default function Dashboard() {
             <div className="dashStatIcon">🌀</div>
             <div>
               <div className="dashStatLabel">Today Tasks</div>
-              <div className="dashStatValue">{todayTasksCount}</div>
+              <div className="dashStatValue">
+                {todayTasksCount}
+              </div>
             </div>
           </div>
 
           <div className="dashStatCard">
             <div className="dashStatIcon">👥</div>
             <div>
-              <div className="dashStatLabel">Upcoming Tasks</div>
-              <div className="dashStatValue">{upcomingCount}</div>
+              <div className="dashStatLabel">
+                Upcoming Tasks
+              </div>
+              <div className="dashStatValue">
+                {upcomingCount}
+              </div>
             </div>
           </div>
         </div>
@@ -281,8 +318,13 @@ export default function Dashboard() {
               </div>
 
               <div className="dash__sort">
-                <span className="dash__sortLabel">Short by :</span>
-                <select className="dash__sortSelect" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <span className="dash__sortLabel">
+                  Short by :
+                </span>
+                <select
+                  className="dash__sortSelect"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}>
                   <option value="priority">Priority</option>
                   <option value="date">Due Date</option>
                 </select>
@@ -309,17 +351,31 @@ export default function Dashboard() {
 
               {filteredTasks.map((t) => (
                 <div className="dashTable__row" key={t.id}>
-                  <div className="dashTable__cell dashTable__taskName">{t.title}</div>
-                  <div className="dashTable__cell">{t.plannerName || "—"}</div>
-                  <div className="dashTable__cell">{t.completed ? "100% completed" : "0% completed"}</div>
-                  <div className="dashTable__cell">{computeDueLabel(t.date)}</div>
+                  <div className="dashTable__cell dashTable__taskName">
+                    {t.title}
+                  </div>
                   <div className="dashTable__cell">
-                    {typeof t.startMin === "number" && typeof t.endMin === "number"
+                    {t.plannerName || "—"}
+                  </div>
+                  <div className="dashTable__cell">
+                    {t.completed
+                      ? "100% completed"
+                      : "0% completed"}
+                  </div>
+                  <div className="dashTable__cell">
+                    {computeDueLabel(t.date)}
+                  </div>
+                  <div className="dashTable__cell">
+                    {typeof t.startMin === "number" &&
+                    typeof t.endMin === "number"
                       ? formatTimeRange(t.startMin, t.endMin)
                       : "—"}
                   </div>
                   <div className="dashTable__cell">
-                    <button className="dashFocusBtn" type="button" onClick={openFocus}>
+                    <button
+                      className="dashFocusBtn"
+                      type="button"
+                      onClick={openFocus}>
                       Focus
                     </button>
                   </div>
@@ -332,29 +388,35 @@ export default function Dashboard() {
 
       {/* Focus timer modal (same as planner) */}
       {focusOpen && (
-        <div className="focusModal" role="dialog" aria-modal="true" onClick={closeFocus}>
+        <div
+          className="focusModal"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeFocus}>
           <div className="focusModal__backdrop" />
-          <div className="focusModal__card" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="focusModal__card"
+            onClick={(e) => e.stopPropagation()}>
             <div className="focusModal__top">
               <button
                 type="button"
                 className={`focusModal__pill ${focusMode === "work" ? "is-active" : ""}`}
-                onClick={() => setMode("work")}
-              >
+                onClick={() => setMode("work")}>
                 work timer
               </button>
               <button
                 type="button"
                 className={`focusModal__pill ${focusMode === "break" ? "is-active" : ""}`}
-                onClick={() => setMode("break")}
-              >
+                onClick={() => setMode("break")}>
                 break timer
               </button>
             </div>
 
             <div className="focusModal__circleWrap">
               <div className="focusModal__circle">
-                <div className="focusModal__time">{formatMMSS(remainingSec)}</div>
+                <div className="focusModal__time">
+                  {formatMMSS(remainingSec)}
+                </div>
               </div>
             </div>
 
@@ -362,12 +424,16 @@ export default function Dashboard() {
               <button
                 type="button"
                 className="focusModal__btn"
-                onClick={() => (isRunning ? setIsRunning(false) : startTimer())}
-              >
+                onClick={() =>
+                  isRunning ? setIsRunning(false) : startTimer()
+                }>
                 {isRunning ? "PAUSE" : "START"}
               </button>
 
-              <button type="button" className="focusModal__btn" onClick={endTimer}>
+              <button
+                type="button"
+                className="focusModal__btn"
+                onClick={endTimer}>
                 END
               </button>
             </div>
