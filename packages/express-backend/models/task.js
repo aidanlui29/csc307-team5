@@ -3,35 +3,34 @@ import mongoose from "mongoose";
 const taskSchema = new mongoose.Schema(
   {
     plannerId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Planner",
-          required: true,
-          index: true
-        },
-    title: { 
-        type: String, 
-        required: true 
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Planner",
+      required: true,
+      index: true
     },
-    description: 
-    { 
-        type: String 
+    title: {
+      type: String,
+      required: true
     },
-    priority: { 
-        type: String, 
-        enum: ["LOW", "MEDIUM", "HIGH"], 
-        default: "MEDIUM" 
+    description: {
+      type: String
     },
-    status: { 
-        type: String, 
-        enum: ["TODO", "DONE"], 
-        default: "TODO" 
+    priority: {
+      type: String,
+      enum: ["LOW", "MEDIUM", "HIGH"],
+      default: "MEDIUM"
     },
-    scheduledFor: { 
-        type: Date 
+    status: {
+      type: String,
+      enum: ["TODO", "DONE"],
+      default: "TODO"
     },
-    dueDate: { 
-        type: Date, 
-        index: true 
+    scheduledFor: {
+      type: Date
+    },
+    dueDate: {
+      type: Date,
+      index: true
     }
   },
   { timestamps: true }
