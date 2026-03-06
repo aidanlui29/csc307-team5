@@ -7,7 +7,7 @@ import React, {
 import { useNavigate, useParams } from "react-router-dom";
 import { authHeaders } from "./auth.jsx";
 import "./dashboard.css";
-import { Users, ListChecks, CalendarClock } from "lucide-react";
+import { Users, usercheck } from "lucide-react";
 
 // same kind label styling as planner
 function formatTimeRange(startMin, endMin) {
@@ -256,7 +256,7 @@ export default function Dashboard() {
         <div className="dash__stats">
           <div className="dashStatCard">
             <div className="dashStatIcon">
-              <users />
+              <Users size={28} />
             </div>
             <div>
               <div className="dashStatLabel">Total Tasks</div>
@@ -268,7 +268,7 @@ export default function Dashboard() {
 
           <div className="dashStatCard">
             <div className="dashStatIcon">
-              <user-check />
+              <usercheck size={28} />
             </div>
             <div>
               <div className="dashStatLabel">Today Tasks</div>
@@ -280,7 +280,7 @@ export default function Dashboard() {
 
           <div className="dashStatCard">
             <div className="dashStatIcon">
-              <users />
+              <Users size={28} />
             </div>
             <div>
               <div className="dashStatLabel">
