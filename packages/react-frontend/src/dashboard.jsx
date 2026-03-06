@@ -301,7 +301,7 @@ export default function Dashboard() {
             <div className="dash__controls">
               <div className="dash__searchMini">
                 <span className="dash__searchIcon">
-                <Search size={5} />
+                  <Search size={5} />
                 </span>
                 <input
                   className="dash__searchMiniInput"
