@@ -7,7 +7,7 @@ import React, {
 import { useNavigate, useParams } from "react-router-dom";
 import { authHeaders } from "./auth.jsx";
 import "./planner.css";
-import { pencil, trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 
 /* ---------- date helpers ---------- */
 function startOfWeek(date) {
@@ -796,14 +796,14 @@ export default function Planner() {
                   type="button"
                   title="Edit"
                   onClick={() => openEdit(selectedEvent)}>
-                  <pencil size={28} />
+                  <Pencil size={28} />
                 </button>
                 <button
                   className="plannerPopover__iconBtn plannerPopover__iconBtn--danger"
                   type="button"
                   title="Delete"
                   onClick={() => deleteEvent(selectedEvent.id)}>
-                  <trash2 size={28} />
+                  <Trash2 size={28} />
                 </button>
               </div>
             </div>
