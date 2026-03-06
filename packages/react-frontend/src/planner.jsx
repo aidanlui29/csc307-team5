@@ -445,6 +445,13 @@ export default function Planner() {
   const [endTime, setEndTime] = useState("10:00");
   const [desc, setDesc] = useState("");
 
+  //  recurrence
+  const [repeatEnabled, setRepeatEnabled] = useState(false);
+  const [repeatEveryWeeks, setRepeatEveryWeeks] = useState(2);
+  const [repeatUntil, setRepeatUntil] = useState(() =>
+    toDateInputValue(new Date())
+  );
+
   function openAddNew() {
     setSelectedEventId(null);
     setEditingId(null);
@@ -455,6 +462,10 @@ export default function Planner() {
     setDateStr(toDateInputValue(new Date()));
     setStartTime("09:00");
     setEndTime("10:00");
+
+    setRepeatEnabled(false);
+    setRepeatEveryWeeks(2);
+    setRepeatUntil(toDateInputValue(new Date()));
 
     // defaults for new task fields (only matter if user switches to task)
     setPriority("medium");
@@ -476,6 +487,9 @@ export default function Planner() {
 
     setPriority(ev.priority || "medium");
     setCompleted(Boolean(ev.completed));
+    setRepeatEnabled(false);
+    setRepeatEveryWeeks(2);
+    setRepeatUntil(ev.date);
 
     setAddOpen(true);
   }
@@ -536,23 +550,83 @@ export default function Planner() {
           prev.map((e) => (e.id === updated.id ? updated : e))
         );
       } else {
-        const res = await fetch(`/api/planners/${id}/events`, {
-          method: "POST",
-          headers: {
-            ...authHeaders(),
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
+        // ---- NEW: recurrence creates multiple events (schedule only)
+        const isRecurring =
+          kind === "schedule" && repeatEnabled && repeatUntil;
 
-        if (res.status === 401) return navigate("/login");
-        if (!res.ok)
-          throw new Error(
-            (await res.text()) || "Failed to create event"
+        if (isRecurring) {
+          const startDate = new Date(`${dateStr}T00:00:00`);
+          const untilDate = new Date(`${repeatUntil}T00:00:00`);
+
+          if (
+            Number.isNaN(startDate.getTime()) ||
+            Number.isNaN(untilDate.getTime())
+          )
+            throw new Error("Invalid recurrence dates.");
+
+          if (untilDate < startDate)
+            throw new Error(
+              "Recurrence end date must be on/after the start date."
+            );
+
+          const createdEvents = [];
+          let cursor = new Date(startDate);
+
+          while (cursor <= untilDate) {
+            const payloadForDate = {
+              ...payload,
+              date: toDateInputValue(cursor)
+            };
+
+            const res = await fetch(
+              `/api/planners/${id}/events`,
+              {
+                method: "POST",
+                headers: {
+                  ...authHeaders(),
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payloadForDate)
+              }
+            );
+
+            if (res.status === 401) return navigate("/login");
+            if (!res.ok)
+              throw new Error(
+                (await res.text()) ||
+                  "Failed to create recurring event"
+              );
+
+            createdEvents.push(await res.json());
+
+            // step by weeks (1 = weekly, 2 = biweekly)
+            cursor = addWeeks(cursor, repeatEveryWeeks);
+          }
+
+          setEvents((prev) => [...prev, ...createdEvents]);
+        } else {
+          // normal single create
+          const res = await fetch(
+            `/api/planners/${id}/events`,
+            {
+              method: "POST",
+              headers: {
+                ...authHeaders(),
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify(payload)
+            }
           );
 
-        const created = await res.json();
-        setEvents((prev) => [...prev, created]);
+          if (res.status === 401) return navigate("/login");
+          if (!res.ok)
+            throw new Error(
+              (await res.text()) || "Failed to create event"
+            );
+
+          const created = await res.json();
+          setEvents((prev) => [...prev, created]);
+        }
       }
 
       closeAdd();
@@ -835,10 +909,16 @@ export default function Planner() {
           <div
             className="plannerModal__card"
             onClick={(e) => e.stopPropagation()}>
+            {/* top spacer so X has its own area */}
+            <div style={{ height: 34 }} aria-hidden="true" />
             <button
               className="plannerModal__close"
               onClick={closeAdd}
-              aria-label="Close">
+              aria-label="Close"
+              style={{
+                top: 18,
+                right: 22
+              }}>
               ✕
             </button>
 
@@ -848,7 +928,6 @@ export default function Planner() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
-
             <div className="plannerModal__row">
               {/* LEFT: Priority + Status ONLY for task */}
               {kind === "task" ? (
@@ -933,6 +1012,98 @@ export default function Planner() {
                   onChange={(e) => setDateStr(e.target.value)}
                 />
               </div>
+
+              {/* Recurrence (schedule only, create-mode only) */}
+              {kind === "schedule" && !editingId && (
+                <div className="plannerModal__field">
+                  <label>Recurrence</label>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 12,
+                      alignItems: "center",
+                      flexWrap: "wrap"
+                    }}>
+                    <label
+                      style={{
+                        display: "flex",
+                        gap: 8,
+                        alignItems: "center"
+                      }}>
+                      <input
+                        type="checkbox"
+                        checked={repeatEnabled}
+                        onChange={(e) =>
+                          setRepeatEnabled(e.target.checked)
+                        }
+                      />
+                      Repeat
+                    </label>
+
+                    {repeatEnabled && (
+                      <>
+                        <select
+                          value={repeatEveryWeeks}
+                          onChange={(e) =>
+                            setRepeatEveryWeeks(
+                              Number(e.target.value)
+                            )
+                          }
+                          style={{
+                            height: 40,
+                            borderRadius: 12,
+                            border:
+                              "1px solid rgba(0,0,0,0.12)",
+                            padding: "0 12px"
+                          }}>
+                          <option value={1}>Every week</option>
+                          <option value={2}>
+                            Every other week
+                          </option>
+                        </select>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 8,
+                            alignItems: "center"
+                          }}>
+                          <span style={{ opacity: 0.7 }}>
+                            until
+                          </span>
+                          <input
+                            type="date"
+                            value={repeatUntil}
+                            onChange={(e) =>
+                              setRepeatUntil(e.target.value)
+                            }
+                            style={{
+                              height: 40,
+                              borderRadius: 12,
+                              border:
+                                "1px solid rgba(0,0,0,0.12)",
+                              padding: "0 12px"
+                            }}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {repeatEnabled && (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        fontSize: 12,
+                        opacity: 0.7
+                      }}>
+                      Repeats on the same weekday as the
+                      selected date.
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="plannerModal__field plannerModal__field--times">
                 <label>Time</label>
