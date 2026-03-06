@@ -1,15 +1,56 @@
+// packages/react-frontend/src/Dashboard.jsx
 import React, {
   useEffect,
   useMemo,
   useRef,
   useState
 } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { authHeaders } from "./auth";
 import "./dashboard.css";
 import { Users, UserCheck, Search } from "lucide-react";
 
-// same kind label styling as planner
+const DEFAULT_COLOR = "#9ca3af";
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function toYYYYMMDD(d) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function formatMDY(dateStr) {
+  if (!dateStr) return "—";
+  const d = new Date(`${dateStr}T00:00:00`);
+  const mm = pad2(d.getMonth() + 1);
+  const dd = pad2(d.getDate());
+  const yyyy = d.getFullYear();
+  return `${mm}/${dd}/${yyyy}`;
+}
+
+function startOfWeek(d) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  const day = x.getDay();
+  x.setDate(x.getDate() - day);
+  return x;
+}
+
+function endOfWeek(d) {
+  const s = startOfWeek(d);
+  const e = new Date(s);
+  e.setDate(s.getDate() + 6);
+  e.setHours(23, 59, 59, 999);
+  return e;
+}
+
+function inRangeYYYYMMDD(dateStr, start, end) {
+  if (!dateStr) return false;
+  const dt = new Date(`${dateStr}T00:00:00`);
+  return dt >= start && dt <= end;
+}
+
 function formatTimeRange(startMin, endMin) {
   const fmt = (m) => {
     const h24 = Math.floor(m / 60);
@@ -21,53 +62,54 @@ function formatTimeRange(startMin, endMin) {
   return `${fmt(startMin)} – ${fmt(endMin)}`;
 }
 
-function computeDueLabel(dateStr) {
-  // dateStr is YYYY-MM-DD
-  const today = new Date();
-  const d = new Date(`${dateStr}T00:00:00`);
-  today.setHours(0, 0, 0, 0);
-
-  const diffDays = Math.round(
-    (d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-  );
-  if (diffDays === 0) return "Do Today";
-  if (diffDays === 1) return "Do Tomorrow";
-  if (diffDays > 1) return `Do in ${diffDays} Days`;
-  if (diffDays === -1) return "Overdue (1 day)";
-  return `Overdue (${Math.abs(diffDays)} days)`;
-}
-
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { id } = useParams(); // optional, if your route is /dashboard/:id
-  // If your route is just /dashboard, set plannerId manually or remove id usage.
-  const plannerId = id; // you can change this to a default planner id if needed
 
-  const [events, setEvents] = useState([]);
+  const [planners, setPlanners] = useState([]);
+  const [eventsByPlanner, setEventsByPlanner] = useState({});
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState("");
 
   const [query, setQuery] = useState("");
-  const [sortBy, setSortBy] = useState("priority"); // "priority" | "date"
+  const [sortBy, setSortBy] = useState("priority");
+  const todayStr = useMemo(() => toYYYYMMDD(new Date()), []);
 
-  // -------- Focus timer modal (copied from Planner logic) --------
+  // -------- Focus timer --------
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusMode, setFocusMode] = useState("work");
-  const WORK_SECONDS = 25 * 60;
+
+  const DEFAULT_WORK_SECONDS = 25 * 60;
   const BREAK_SECONDS = 5 * 60;
 
-  const [_durationSec, setDurationSec] = useState(WORK_SECONDS);
-  const [remainingSec, setRemainingSec] =
-    useState(WORK_SECONDS);
+  const [workDurationSec, setWorkDurationSec] = useState(
+    DEFAULT_WORK_SECONDS
+  );
+  const [remainingSec, setRemainingSec] = useState(
+    DEFAULT_WORK_SECONDS
+  );
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef(null);
 
-  function openFocus() {
+  function openFocus(task) {
     setFocusOpen(true);
     setIsRunning(false);
-    const d =
-      focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
-    setDurationSec(d);
+
+    let allocatedMin = 0;
+    if (
+      task &&
+      typeof task.startMin === "number" &&
+      typeof task.endMin === "number"
+    ) {
+      allocatedMin = Math.max(0, task.endMin - task.startMin);
+    }
+
+    const workSec =
+      allocatedMin > 0
+        ? allocatedMin * 60
+        : DEFAULT_WORK_SECONDS;
+    setWorkDurationSec(workSec);
+
+    const d = focusMode === "work" ? workSec : BREAK_SECONDS;
     setRemainingSec(d);
   }
 
@@ -84,8 +126,7 @@ export default function Dashboard() {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
 
-    const d = mode === "work" ? WORK_SECONDS : BREAK_SECONDS;
-    setDurationSec(d);
+    const d = mode === "work" ? workDurationSec : BREAK_SECONDS;
     setRemainingSec(d);
   }
 
@@ -100,8 +141,7 @@ export default function Dashboard() {
     timerRef.current = null;
 
     const d =
-      focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
-    setDurationSec(d);
+      focusMode === "work" ? workDurationSec : BREAK_SECONDS;
     setRemainingSec(d);
   }
 
@@ -132,67 +172,139 @@ export default function Dashboard() {
       timerRef.current = null;
     };
   }, [isRunning]);
-  // -------------------------------------------------------------
 
-  // Load events from backend (same source as Planner)
+  // Load planners
   useEffect(() => {
     let cancelled = false;
 
-    async function load() {
-      setLoading(true);
-      setPageError("");
-
+    async function loadPlanners() {
       try {
-        // If you don’t have plannerId in the route, you can:
-        // 1) fetch a "default planner" endpoint, or
-        // 2) store last-opened plannerId in localStorage and read it here.
-        if (!plannerId) {
-          setEvents([]);
-          setPageError(
-            "No planner selected for dashboard. (Route may need /dashboard/:id)"
-          );
-          return;
-        }
+        setLoading(true);
+        const res = await fetch("/api/planners", {
+          headers: authHeaders()
+        });
 
-        const res = await fetch(
-          `/api/planners/${plannerId}/events`,
-          { headers: authHeaders() }
-        );
-
-        if (res.status === 401) {
-          navigate("/login");
-          return;
-        }
-        if (!res.ok) {
-          const msg = await res.text();
-          throw new Error(msg || "Failed to load tasks");
-        }
+        if (res.status === 401) return navigate("/login");
+        if (!res.ok) throw new Error(await res.text());
 
         const data = await res.json();
         if (!cancelled)
-          setEvents(Array.isArray(data) ? data : []);
+          setPlanners(Array.isArray(data) ? data : []);
       } catch (e) {
         if (!cancelled)
-          setPageError(
-            e?.message ||
-              "Network error. Is the backend running?"
-          );
+          setPageError(e?.message || "Network error.");
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
 
-    load();
+    loadPlanners();
     return () => {
       cancelled = true;
     };
-  }, [plannerId, navigate]);
+  }, [navigate]);
 
-  // Dashboard focuses on tasks (not schedules)
+  // Load events
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAllPlannerEvents() {
+      try {
+        const entries = await Promise.all(
+          planners.map(async (p) => {
+            const pid = p.id || p._id;
+            if (!pid) return [null, []];
+
+            try {
+              const res = await fetch(
+                `/api/planners/${pid}/events`,
+                {
+                  headers: authHeaders()
+                }
+              );
+
+              if (res.status === 401) return navigate("/login");
+              if (!res.ok) return [pid, []];
+
+              const data = await res.json();
+              return [pid, Array.isArray(data) ? data : []];
+            } catch {
+              return [pid, []];
+            }
+          })
+        );
+
+        if (cancelled) return;
+
+        const obj = {};
+        for (const [plannerId, evs] of entries) {
+          if (plannerId) obj[plannerId] = evs;
+        }
+        setEventsByPlanner(obj);
+      } catch (e) {
+        if (!cancelled)
+          setPageError(e?.message || "Failed to load events.");
+      }
+    }
+
+    if (planners.length > 0) loadAllPlannerEvents();
+    else setEventsByPlanner({});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [planners, navigate]);
+
+  const allEvents = useMemo(() => {
+    const out = [];
+    for (const p of planners) {
+      const pid = p.id || p._id;
+      if (!pid) continue;
+
+      const color = p.color || DEFAULT_COLOR;
+      const evs = eventsByPlanner[pid] || [];
+
+      for (const ev of evs) {
+        out.push({
+          ...ev,
+          id: ev.id || ev._id,
+          plannerId: pid,
+          plannerName: p.name || "Planner",
+          plannerColor: color
+        });
+      }
+    }
+    return out;
+  }, [planners, eventsByPlanner]);
+
   const tasks = useMemo(
-    () => events.filter((e) => e.kind === "task"),
-    [events]
+    () => allEvents.filter((e) => e.kind === "task"),
+    [allEvents]
   );
+
+  const { todayOpenCount, weekOpenTotal, weekCompleted } =
+    useMemo(() => {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const s = startOfWeek(now);
+      const e = endOfWeek(now);
+
+      const todayOpenCount = tasks.filter(
+        (t) => t.date === todayStr && !t.completed
+      ).length;
+
+      const weekTasks = tasks.filter((t) =>
+        inRangeYYYYMMDD(t.date, s, e)
+      );
+      const weekOpenTotal = weekTasks.filter(
+        (t) => !t.completed
+      ).length;
+      const weekCompleted = weekTasks.filter(
+        (t) => !!t.completed
+      ).length;
+
+      return { todayOpenCount, weekOpenTotal, weekCompleted };
+    }, [tasks, todayStr]);
 
   const filteredTasks = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -207,7 +319,6 @@ export default function Dashboard() {
     base.sort((a, b) => {
       if (sortBy === "date")
         return (a.date || "").localeCompare(b.date || "");
-      // default: priority first, then date
       const pa = priorityRank[a.priority || "medium"] ?? 1;
       const pb = priorityRank[b.priority || "medium"] ?? 1;
       if (pa !== pb) return pa - pb;
@@ -217,29 +328,10 @@ export default function Dashboard() {
     return base;
   }, [tasks, query, sortBy]);
 
-  const todayTasksCount = useMemo(() => {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
-      today.getDate()
-    ).padStart(2, "0")}`;
-    return tasks.filter((t) => t.date === todayStr).length;
-  }, [tasks]);
-
-  const upcomingCount = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return tasks.filter((t) => {
-      const d = new Date(`${t.date}T00:00:00`);
-      return d.getTime() > today.getTime();
-    }).length;
-  }, [tasks]);
-
   return (
     <div className={`dash ${focusOpen ? "dash--blurred" : ""}`}>
-      {/* Top bar (menu + search) */}
       <div className="dash__top">
         <div style={{ width: 120 }} />
-
         <div className="dash__searchTop">
           <input
             className="dash__searchTopInput"
@@ -250,22 +342,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Content */}
       <div className="dash__layout">
-        {/* Left stat cards */}
         <div className="dash__stats">
-          <div className="dashStatCard">
-            <div className="dashStatIcon">
-              <Users size={28} />
-            </div>
-            <div>
-              <div className="dashStatLabel">Total Tasks</div>
-              <div className="dashStatValue">
-                {tasks.length}
-              </div>
-            </div>
-          </div>
-
           <div className="dashStatCard">
             <div className="dashStatIcon">
               <UserCheck size={28} />
@@ -273,7 +351,7 @@ export default function Dashboard() {
             <div>
               <div className="dashStatLabel">Today Tasks</div>
               <div className="dashStatValue">
-                {todayTasksCount}
+                {todayOpenCount}
               </div>
             </div>
           </div>
@@ -284,16 +362,29 @@ export default function Dashboard() {
             </div>
             <div>
               <div className="dashStatLabel">
-                Upcoming Tasks
+                Tasks This Week
               </div>
               <div className="dashStatValue">
-                {upcomingCount}
+                {weekOpenTotal}
+              </div>
+            </div>
+          </div>
+
+          <div className="dashStatCard">
+            <div className="dashStatIcon">
+              <Users size={28} />
+            </div>
+            <div>
+              <div className="dashStatLabel">
+                Completed This Week
+              </div>
+              <div className="dashStatValue">
+                {weekCompleted}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Main table */}
         <div className="dash__mainCard">
           <div className="dash__mainHeader">
             <h2 className="dash__title">All Tasks</h2>
@@ -313,14 +404,14 @@ export default function Dashboard() {
 
               <div className="dash__sort">
                 <span className="dash__sortLabel">
-                  Short by :
+                  Sort by :
                 </span>
                 <select
                   className="dash__sortSelect"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}>
                   <option value="priority">Priority</option>
-                  <option value="date">Due Date</option>
+                  <option value="date">Date</option>
                 </select>
               </div>
             </div>
@@ -337,8 +428,8 @@ export default function Dashboard() {
               <div className="dashTable__head">
                 <div>Task Name</div>
                 <div>Planner</div>
-                <div>Progress</div>
-                <div>Due Date</div>
+                <div>Status</div>
+                <div>Date</div>
                 <div>Time</div>
                 <div>Start Focus</div>
               </div>
@@ -352,12 +443,10 @@ export default function Dashboard() {
                     {t.plannerName || "—"}
                   </div>
                   <div className="dashTable__cell">
-                    {t.completed
-                      ? "100% completed"
-                      : "0% completed"}
+                    {t.completed ? "Complete" : "Not Complete"}
                   </div>
                   <div className="dashTable__cell">
-                    {computeDueLabel(t.date)}
+                    {formatMDY(t.date)}
                   </div>
                   <div className="dashTable__cell">
                     {typeof t.startMin === "number" &&
@@ -369,7 +458,7 @@ export default function Dashboard() {
                     <button
                       className="dashFocusBtn"
                       type="button"
-                      onClick={openFocus}>
+                      onClick={() => openFocus(t)}>
                       Focus
                     </button>
                   </div>
@@ -380,7 +469,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Focus timer modal (same as planner) */}
       {focusOpen && (
         <div
           className="focusModal"
