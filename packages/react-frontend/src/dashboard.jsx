@@ -7,7 +7,7 @@ import React, {
 import { useNavigate, useParams } from "react-router-dom";
 import { authHeaders } from "./auth";
 import "./dashboard.css";
-import { Users, UserCheck } from "lucide-react";
+import { Users, UserCheck, Search } from "lucide-react";
 
 // same kind label styling as planner
 function formatTimeRange(startMin, endMin) {
@@ -300,7 +300,9 @@ export default function Dashboard() {
 
             <div className="dash__controls">
               <div className="dash__searchMini">
-                <span className="dash__searchIcon">🔍</span>
+                <span className="dash__searchIcon">
+                <Search size={5} />
+                </span>
                 <input
                   className="dash__searchMiniInput"
                   placeholder="Search"
