@@ -238,7 +238,7 @@ export default function Dashboard() {
     <div className={`dash ${focusOpen ? "dash--blurred" : ""}`}>
       {/* Top bar (menu + search) */}
       <div className="dash__top">
-      <div style={{ width: 120 }} />
+        <div style={{ width: 120 }} />
 
         <div className="dash__searchTop">
           <input
@@ -255,7 +255,9 @@ export default function Dashboard() {
         {/* Left stat cards */}
         <div className="dash__stats">
           <div className="dashStatCard">
-            <div className="dashStatIcon"><users/></div>
+            <div className="dashStatIcon">
+              <users />
+            </div>
             <div>
               <div className="dashStatLabel">Total Tasks</div>
               <div className="dashStatValue">
@@ -265,7 +267,9 @@ export default function Dashboard() {
           </div>
 
           <div className="dashStatCard">
-            <div className="dashStatIcon"><user-check/></div>
+            <div className="dashStatIcon">
+              <user-check />
+            </div>
             <div>
               <div className="dashStatLabel">Today Tasks</div>
               <div className="dashStatValue">
@@ -275,7 +279,9 @@ export default function Dashboard() {
           </div>
 
           <div className="dashStatCard">
-            <div className="dashStatIcon"><users/></div>
+            <div className="dashStatIcon">
+              <users />
+            </div>
             <div>
               <div className="dashStatLabel">
                 Upcoming Tasks
