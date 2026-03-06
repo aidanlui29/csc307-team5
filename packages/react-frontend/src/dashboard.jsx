@@ -7,6 +7,7 @@ import React, {
 import { useNavigate, useParams } from "react-router-dom";
 import { authHeaders } from "./auth.jsx";
 import "./dashboard.css";
+import { Users, ListChecks, CalendarClock } from "lucide-react";
 
 // same kind label styling as planner
 function formatTimeRange(startMin, endMin) {
@@ -237,22 +238,7 @@ export default function Dashboard() {
     <div className={`dash ${focusOpen ? "dash--blurred" : ""}`}>
       {/* Top bar (menu + search) */}
       <div className="dash__top">
-        <div className="dash__menuWrap">
-          <button
-            className="dash__menuBtn"
-            type="button"
-            aria-label="Open menu"
-            onClick={() =>
-              window.dispatchEvent(
-                new CustomEvent("clockedIn:openMenu")
-              )
-            }>
-            <span className="dash__hamburger" />
-            <span className="dash__hamburger" />
-            <span className="dash__hamburger" />
-          </button>
-          <div className="dash__menuText">Menu</div>
-        </div>
+      <div style={{ width: 120 }} />
 
         <div className="dash__searchTop">
           <input
@@ -269,7 +255,7 @@ export default function Dashboard() {
         {/* Left stat cards */}
         <div className="dash__stats">
           <div className="dashStatCard">
-            <div className="dashStatIcon">👥</div>
+            <div className="dashStatIcon"><users/></div>
             <div>
               <div className="dashStatLabel">Total Tasks</div>
               <div className="dashStatValue">
@@ -279,7 +265,7 @@ export default function Dashboard() {
           </div>
 
           <div className="dashStatCard">
-            <div className="dashStatIcon">🌀</div>
+            <div className="dashStatIcon"><user-check/></div>
             <div>
               <div className="dashStatLabel">Today Tasks</div>
               <div className="dashStatValue">
@@ -289,7 +275,7 @@ export default function Dashboard() {
           </div>
 
           <div className="dashStatCard">
-            <div className="dashStatIcon">👥</div>
+            <div className="dashStatIcon"><users/></div>
             <div>
               <div className="dashStatLabel">
                 Upcoming Tasks

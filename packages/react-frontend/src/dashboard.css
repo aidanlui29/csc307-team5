@@ -12,39 +12,6 @@
   padding: 18px 22px;
 }
 
-.dash__menuWrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.dash__menuBtn {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: #fff;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-}
-
-.dash__hamburger {
-  display: block;
-  width: 18px;
-  height: 2px;
-  background: #333;
-  border-radius: 999px;
-}
-.dash__menuBtn .dash__hamburger + .dash__hamburger {
-  margin-top: 4px;
-}
-
-.dash__menuText {
-  font-weight: 700;
-  font-size: 18px;
-  color: #444;
-}
 
 .dash__searchTop {
   display: flex;
