@@ -530,6 +530,54 @@ app.delete(
   }
 );
 
+function getWeekRange(now = new Date()) {
+  const d = new Date(now);
+  const day = (d.getDay() + 6) % 7; // Mon=0 ... Sun=6
+  d.setHours(0, 0, 0, 0);
+  const start = new Date(d);
+  start.setDate(start.getDate() - day);
+
+  const end = new Date(start);
+  end.setDate(end.getDate() + 7);
+  return { start, end };
+}
+
+function toYmd(d) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/* =========================
+   FEEDBACK (Mongo)
+   ========================= */
+
+app.get("/api/feedback", authenticateUser, async (req, res) => {
+  const { start, end } = getWeekRange(new Date());
+  const startYmd = toYmd(start);
+
+  const endExclusiveYmd = toYmd(end);
+
+  const [completedRes] = await Promise.all([
+    Event.aggregate([
+      {
+        $match: {
+          ownerId: req.user.userId,
+          kind: "task",
+          completed: true,
+          date: { $gte: startYmd, $lt: endExclusiveYmd }
+        }
+      },
+      { $count: "completedTasks" }
+    ])
+  ]);
+
+  const completedTasks = completedRes[0]?.completedTasks ?? 0;
+
+  res.json({ completedTasks, range: { start, end } });
+});
+
 /* =========================
    Start (Azure-safe)
    ========================= */

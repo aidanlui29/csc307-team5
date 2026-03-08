@@ -12,7 +12,7 @@ import Signup from "./signup.jsx";
 import Planners from "./planners.jsx";
 import Dashboard from "./dashboard.jsx";
 import Planner from "./planner.jsx";
-
+import Feedback from "./feedback.jsx";
 import RouteGuard from "./routeGuard.jsx";
 import TopBar from "./topBar.jsx";
 import MenuDrawer from "./menuDrawer.jsx";
@@ -72,6 +72,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route path="/planners" element={<Planners />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/feedback" element={<Feedback />} />
           </Route>
 
           <Route element={<DrawerOnlyLayout />}>

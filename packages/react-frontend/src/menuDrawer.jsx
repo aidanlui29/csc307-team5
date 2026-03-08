@@ -73,6 +73,13 @@ export default function MenuDrawer({ open, onClose }) {
           Dashboard
         </Link>
 
+        <Link
+          to="/feedback"
+          onClick={onClose}
+          style={navStyle(isActive("/feedback"))}>
+          Feedback
+        </Link>
+
         <button onClick={handleLogout} style={logoutStyle}>
           Log Out
         </button>
