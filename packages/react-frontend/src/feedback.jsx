@@ -1,13 +1,7 @@
-// packages/react-frontend/src/feedback.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authHeaders } from "./auth";
-import "./dashboard.css";
-import { UserCheck, Clock, Users } from "lucide-react";
-
-// Currently uses similar style to dashboard
-// Ironically Time worked does not work
-// The week summary is very minimal
+import "./feedback.css";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -17,7 +11,13 @@ function toYYYYMMDD(d) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
-function startOfWeek(d) {
+function parseYmd(ymd) {
+  const d = new Date(`${ymd}T00:00:00`);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function startOfWeekSunday(d) {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
   const day = x.getDay();
@@ -25,18 +25,23 @@ function startOfWeek(d) {
   return x;
 }
 
-function endOfWeek(d) {
-  const s = startOfWeek(d);
+function endOfWeekSunday(d) {
+  const s = startOfWeekSunday(d);
   const e = new Date(s);
   e.setDate(s.getDate() + 6);
   e.setHours(23, 59, 59, 999);
   return e;
 }
 
-function inRangeYYYYMMDD(dateStr, start, end) {
-  if (!dateStr) return false;
-  const dt = new Date(`${dateStr}T00:00:00`);
-  return dt >= start && dt <= end;
+function fmtRange(s, e) {
+  const opts = { month: "short", day: "numeric", year: "numeric" };
+  return `${s.toLocaleDateString(undefined, opts)} – ${e.toLocaleDateString(undefined, opts)}`;
+}
+
+function shiftWeekStart(weekStartStr, deltaWeeks) {
+  const d = parseYmd(weekStartStr);
+  d.setDate(d.getDate() + deltaWeeks * 7);
+  return toYYYYMMDD(d);
 }
 
 export default function WeeklyFeedback() {
@@ -47,16 +52,98 @@ export default function WeeklyFeedback() {
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState("");
 
-  // currently have this set at 60 minutes
-  const [focusMinutes, setFocusMinutes] = useState(60);
+  const thisWeekStartStr = useMemo(() => {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    return toYYYYMMDD(startOfWeekSunday(t));
+  }, []);
 
-  // Load planners (same as Dashboard)
+  const [weekStartStr, setWeekStartStr] = useState(thisWeekStartStr);
+
+  const weekStart = useMemo(() => parseYmd(weekStartStr), [weekStartStr]);
+  const weekEnd = useMemo(() => endOfWeekSunday(weekStart), [weekStart]);
+
+  const isCurrentWeek = weekStartStr === thisWeekStartStr;
+
+  // ============================
+  // Reflection (MongoDB)
+  // ============================
+  const [reflection, setReflection] = useState("");
+  const [reflectionLoading, setReflectionLoading] = useState(false);
+  const didLoadRef = useRef(false);
+  const saveTimerRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadReflection() {
+      try {
+        setReflectionLoading(true);
+        didLoadRef.current = false;
+
+        const res = await fetch(`/api/reflections/week/${weekStartStr}`, {
+          headers: authHeaders()
+        });
+
+        if (res.status === 401) return navigate("/login");
+        if (!res.ok) throw new Error(await res.text());
+
+        const data = await res.json();
+
+        if (!cancelled) {
+          setReflection(data?.text || "");
+          didLoadRef.current = true;
+        }
+      } catch {
+        if (!cancelled) setPageError("Failed to load reflection.");
+      } finally {
+        if (!cancelled) setReflectionLoading(false);
+      }
+    }
+
+    loadReflection();
+    return () => {
+      cancelled = true;
+    };
+  }, [weekStartStr, navigate]);
+
+  // Debounced autosave
+  useEffect(() => {
+    if (!didLoadRef.current) return;
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
+    saveTimerRef.current = setTimeout(async () => {
+      try {
+        await fetch(`/api/reflections/week/${weekStartStr}`, {
+          method: "PUT",
+          headers: {
+            ...authHeaders(),
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ text: reflection })
+        });
+      } catch {
+        // ignore
+      }
+    }, 600);
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [reflection, weekStartStr]);
+
+  // ============================
+  // Load planners
+  // ============================
   useEffect(() => {
     let cancelled = false;
 
     async function loadPlanners() {
       try {
         setLoading(true);
+        setPageError("");
+
         const res = await fetch("/api/planners", {
           headers: authHeaders()
         });
@@ -65,11 +152,9 @@ export default function WeeklyFeedback() {
         if (!res.ok) throw new Error(await res.text());
 
         const data = await res.json();
-        if (!cancelled)
-          setPlanners(Array.isArray(data) ? data : []);
-      } catch (e) {
-        if (!cancelled)
-          setPageError(e?.message || "Network error.");
+        if (!cancelled) setPlanners(Array.isArray(data) ? data : []);
+      } catch {
+        if (!cancelled) setPageError("Failed to load planners.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -81,12 +166,15 @@ export default function WeeklyFeedback() {
     };
   }, [navigate]);
 
-  // Load events (same as Dashboard)
+  // Load week events
   useEffect(() => {
     let cancelled = false;
 
-    async function loadAllPlannerEvents() {
+    async function loadWeekEvents() {
       try {
+        const from = weekStartStr;
+        const to = toYYYYMMDD(weekEnd);
+
         const entries = await Promise.all(
           planners.map(async (p) => {
             const pid = p.id || p._id;
@@ -94,15 +182,11 @@ export default function WeeklyFeedback() {
 
             try {
               const res = await fetch(
-                `/api/planners/${pid}/events`,
-                {
-                  headers: authHeaders()
-                }
+                `/api/planners/${pid}/events?from=${from}&to=${to}`,
+                { headers: authHeaders() }
               );
 
-              if (res.status === 401) return navigate("/login");
               if (!res.ok) return [pid, []];
-
               const data = await res.json();
               return [pid, Array.isArray(data) ? data : []];
             } catch {
@@ -118,124 +202,187 @@ export default function WeeklyFeedback() {
           if (plannerId) obj[plannerId] = evs;
         }
         setEventsByPlanner(obj);
-      } catch (e) {
-        if (!cancelled)
-          setPageError(e?.message || "Failed to load events.");
+      } catch {
+        if (!cancelled) setPageError("Failed to load events.");
       }
     }
 
-    if (planners.length > 0) loadAllPlannerEvents();
+    if (planners.length > 0) loadWeekEvents();
     else setEventsByPlanner({});
 
     return () => {
       cancelled = true;
     };
-  }, [planners, navigate]);
+  }, [planners, weekStartStr, weekEnd]);
 
-  const allEvents = useMemo(() => {
-    const out = [];
+  // ============================
+  // Weekly Report
+  // ============================
+  const report = useMemo(() => {
+    const all = [];
     for (const p of planners) {
       const pid = p.id || p._id;
       if (!pid) continue;
       const evs = eventsByPlanner[pid] || [];
-      for (const ev of evs)
-        out.push({ ...ev, id: ev.id || ev._id });
+      for (const ev of evs) all.push(ev);
     }
-    return out;
-  }, [planners, eventsByPlanner]);
 
-  const tasks = useMemo(
-    () => allEvents.filter((e) => e.kind === "task"),
-    [allEvents]
-  );
+    const tasks = all.filter((e) => e.kind === "task");
+    const total = tasks.length;
+    const completedTasks = tasks.filter((t) => !!t.completed);
+    const completed = completedTasks.length;
+    const rate = total === 0 ? 100 : Math.round((completed / total) * 100);
 
-  const { weekTotalTasks, weekCompletedTasks } = useMemo(() => {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const s = startOfWeek(now);
-    const e = endOfWeek(now);
+    if (total === 0) {
+      return {
+        total,
+        completed,
+        rate,
+        daysActive: 0,
+        bestDayLabel: "No data",
+        longestStreak: 0,
+        noData: true
+      };
+    }
 
-    const weekTasks = tasks.filter((t) =>
-      inRangeYYYYMMDD(t.date, s, e)
-    );
-    const weekTotalTasks = weekTasks.length;
-    const weekCompletedTasks = weekTasks.filter(
-      (t) => !!t.completed
-    ).length;
+    const completedByDate = {};
+    for (const t of completedTasks) {
+      completedByDate[t.date] = (completedByDate[t.date] || 0) + 1;
+    }
 
-    return { weekTotalTasks, weekCompletedTasks };
-  }, [tasks]);
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + i);
+      const ymd = toYYYYMMDD(d);
+      days.push({
+        label: d.toLocaleDateString(undefined, { weekday: "long" }),
+        completed: completedByDate[ymd] || 0
+      });
+    }
 
-  // This will show how long a user has worked on tasks
-  // Might be converted to hours
-  const timeWorked = useMemo(() => {
-    return Math.round((focusMinutes / 60) * 10) / 10;
-  }, [focusMinutes]);
+    const daysActive = days.filter((d) => d.completed > 0).length;
+
+    let bestDay = days[0];
+    for (const d of days) {
+      if (d.completed > bestDay.completed) bestDay = d;
+    }
+
+    const bestDayLabel =
+      bestDay.completed > 0
+        ? `${bestDay.label} (${bestDay.completed})`
+        : "No data";
+
+    let longestStreak = 0;
+    let currentStreak = 0;
+
+    for (const d of days) {
+      if (d.completed > 0) {
+        currentStreak++;
+        if (currentStreak > longestStreak) longestStreak = currentStreak;
+      } else {
+        currentStreak = 0;
+      }
+    }
+
+    return {
+      total,
+      completed,
+      rate,
+      daysActive,
+      bestDayLabel,
+      longestStreak,
+      noData: false
+    };
+  }, [planners, eventsByPlanner, weekStart]);
+
+  const canGoNext = weekStartStr < thisWeekStartStr;
 
   return (
-    <div className="dash">
-      <div className="dash__top"></div>
-
-      <div className="dash__layout">
-        <div className="dash__stats">
-          <div className="dashStatCard">
-            <div className="dashStatIcon">
-              <UserCheck size={28} />
-            </div>
-            <div>
-              <div className="dashStatLabel">
-                Completed This Week
-              </div>
-              <div className="dashStatValue">
-                {weekCompletedTasks}
-              </div>
-            </div>
-          </div>
-
-          <div className="dashStatCard">
-            <div className="dashStatIcon">
-              <Users size={28} />
-            </div>
-            <div>
-              <div className="dashStatLabel">
-                Tasks This Week
-              </div>
-              <div className="dashStatValue">
-                {weekTotalTasks}
-              </div>
-            </div>
-          </div>
-
-          <div className="dashStatCard">
-            <div className="dashStatIcon">
-              <Clock size={28} />
-            </div>
-            <div>
-              <div className="dashStatLabel">Time Worked</div>
-              <div className="dashStatValue">{timeWorked}</div>
-            </div>
-          </div>
+    <div className="fb">
+      <div className="fbHeader">
+        <div>
+          <div className="fbTitle">Weekly Report</div>
+          <div className="fbRange">{fmtRange(weekStart, weekEnd)}</div>
         </div>
 
-        <div className="dash__mainCard">
-          <div className="dash__mainHeader">
-            <h2 className="dash__title">This Week Summary</h2>
-          </div>
+        <div className="fbHeaderRight">
+          <button
+            className="fbArrowBtn"
+            onClick={() => setWeekStartStr((s) => shiftWeekStart(s, -1))}
+          >
+            ←
+          </button>
 
-          {loading ? (
-            <div className="dash__empty">Loading…</div>
-          ) : pageError ? (
-            <div className="dash__empty">{pageError}</div>
-          ) : (
-            <div className="dash__empty">
-              You completed <b>{weekCompletedTasks}</b> out of{" "}
-              <b>{weekTotalTasks}</b> tasks this week.
-              <br />
-              Time worked: <b>{timeWorked}</b>
-            </div>
-          )}
+          <div className="fbWeekChip">{fmtRange(weekStart, weekEnd)}</div>
+
+          <button
+            className="fbArrowBtn"
+            onClick={() => setWeekStartStr((s) => shiftWeekStart(s, 1))}
+            disabled={!canGoNext}
+          >
+            →
+          </button>
         </div>
       </div>
+
+      {loading ? (
+        <div className="fbCard">Loading…</div>
+      ) : pageError ? (
+        <div className="fbCard">{pageError}</div>
+      ) : report.noData && !isCurrentWeek ? null : (
+        <>
+          <div className="fbCard">
+            <div className="fbStats">
+              <div className="fbStat">
+                <div className="fbStatLabel">Completed</div>
+                <div className="fbStatValue">{report.completed}</div>
+              </div>
+
+              <div className="fbStat">
+                <div className="fbStatLabel">Total</div>
+                <div className="fbStatValue">{report.total}</div>
+              </div>
+
+              <div className="fbStat">
+                <div className="fbStatLabel">Completion</div>
+                <div className="fbStatValue">{report.rate}%</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="fbCard">
+            <div className="fbSectionTitle">Insights</div>
+            <div className="fbInsights">
+              <div className="fbInsightItem">
+                <div className="fbInsightLabel">Days active</div>
+                <div className="fbInsightValue">{report.daysActive} / 7</div>
+              </div>
+
+              <div className="fbInsightItem">
+                <div className="fbInsightLabel">Best day</div>
+                <div className="fbInsightValue">{report.bestDayLabel}</div>
+              </div>
+
+              <div className="fbInsightItem">
+                <div className="fbInsightLabel">Longest streak</div>
+                <div className="fbInsightValue">{report.longestStreak} day(s)</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="fbCard">
+            <div className="fbSectionTitle">Self Reflection</div>
+            <textarea
+              className="fbTextarea"
+              value={reflection}
+              onChange={(e) => setReflection(e.target.value)}
+              disabled={reflectionLoading}
+              placeholder="Write here..."
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }
