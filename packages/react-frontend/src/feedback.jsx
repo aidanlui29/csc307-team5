@@ -1,4 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { authHeaders } from "./auth";
 import "./feedback.css";
@@ -34,7 +39,11 @@ function endOfWeekSunday(d) {
 }
 
 function fmtRange(s, e) {
-  const opts = { month: "short", day: "numeric", year: "numeric" };
+  const opts = {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  };
   return `${s.toLocaleDateString(undefined, opts)} – ${e.toLocaleDateString(undefined, opts)}`;
 }
 
@@ -58,10 +67,17 @@ export default function WeeklyFeedback() {
     return toYYYYMMDD(startOfWeekSunday(t));
   }, []);
 
-  const [weekStartStr, setWeekStartStr] = useState(thisWeekStartStr);
+  const [weekStartStr, setWeekStartStr] =
+    useState(thisWeekStartStr);
 
-  const weekStart = useMemo(() => parseYmd(weekStartStr), [weekStartStr]);
-  const weekEnd = useMemo(() => endOfWeekSunday(weekStart), [weekStart]);
+  const weekStart = useMemo(
+    () => parseYmd(weekStartStr),
+    [weekStartStr]
+  );
+  const weekEnd = useMemo(
+    () => endOfWeekSunday(weekStart),
+    [weekStart]
+  );
 
   const isCurrentWeek = weekStartStr === thisWeekStartStr;
 
@@ -69,7 +85,8 @@ export default function WeeklyFeedback() {
   // Reflection (MongoDB)
   // ============================
   const [reflection, setReflection] = useState("");
-  const [reflectionLoading, setReflectionLoading] = useState(false);
+  const [reflectionLoading, setReflectionLoading] =
+    useState(false);
   const didLoadRef = useRef(false);
   const saveTimerRef = useRef(null);
 
@@ -81,9 +98,12 @@ export default function WeeklyFeedback() {
         setReflectionLoading(true);
         didLoadRef.current = false;
 
-        const res = await fetch(`/api/reflections/week/${weekStartStr}`, {
-          headers: authHeaders()
-        });
+        const res = await fetch(
+          `/api/reflections/week/${weekStartStr}`,
+          {
+            headers: authHeaders()
+          }
+        );
 
         if (res.status === 401) return navigate("/login");
         if (!res.ok) throw new Error(await res.text());
@@ -95,7 +115,8 @@ export default function WeeklyFeedback() {
           didLoadRef.current = true;
         }
       } catch {
-        if (!cancelled) setPageError("Failed to load reflection.");
+        if (!cancelled)
+          setPageError("Failed to load reflection.");
       } finally {
         if (!cancelled) setReflectionLoading(false);
       }
@@ -111,7 +132,8 @@ export default function WeeklyFeedback() {
   useEffect(() => {
     if (!didLoadRef.current) return;
 
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    if (saveTimerRef.current)
+      clearTimeout(saveTimerRef.current);
 
     saveTimerRef.current = setTimeout(async () => {
       try {
@@ -129,7 +151,8 @@ export default function WeeklyFeedback() {
     }, 600);
 
     return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (saveTimerRef.current)
+        clearTimeout(saveTimerRef.current);
     };
   }, [reflection, weekStartStr]);
 
@@ -152,9 +175,11 @@ export default function WeeklyFeedback() {
         if (!res.ok) throw new Error(await res.text());
 
         const data = await res.json();
-        if (!cancelled) setPlanners(Array.isArray(data) ? data : []);
+        if (!cancelled)
+          setPlanners(Array.isArray(data) ? data : []);
       } catch {
-        if (!cancelled) setPageError("Failed to load planners.");
+        if (!cancelled)
+          setPageError("Failed to load planners.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -231,7 +256,8 @@ export default function WeeklyFeedback() {
     const total = tasks.length;
     const completedTasks = tasks.filter((t) => !!t.completed);
     const completed = completedTasks.length;
-    const rate = total === 0 ? 100 : Math.round((completed / total) * 100);
+    const rate =
+      total === 0 ? 100 : Math.round((completed / total) * 100);
 
     if (total === 0) {
       return {
@@ -247,7 +273,8 @@ export default function WeeklyFeedback() {
 
     const completedByDate = {};
     for (const t of completedTasks) {
-      completedByDate[t.date] = (completedByDate[t.date] || 0) + 1;
+      completedByDate[t.date] =
+        (completedByDate[t.date] || 0) + 1;
     }
 
     const days = [];
@@ -256,12 +283,16 @@ export default function WeeklyFeedback() {
       d.setDate(d.getDate() + i);
       const ymd = toYYYYMMDD(d);
       days.push({
-        label: d.toLocaleDateString(undefined, { weekday: "long" }),
+        label: d.toLocaleDateString(undefined, {
+          weekday: "long"
+        }),
         completed: completedByDate[ymd] || 0
       });
     }
 
-    const daysActive = days.filter((d) => d.completed > 0).length;
+    const daysActive = days.filter(
+      (d) => d.completed > 0
+    ).length;
 
     let bestDay = days[0];
     for (const d of days) {
@@ -279,7 +310,8 @@ export default function WeeklyFeedback() {
     for (const d of days) {
       if (d.completed > 0) {
         currentStreak++;
-        if (currentStreak > longestStreak) longestStreak = currentStreak;
+        if (currentStreak > longestStreak)
+          longestStreak = currentStreak;
       } else {
         currentStreak = 0;
       }
@@ -303,24 +335,30 @@ export default function WeeklyFeedback() {
       <div className="fbHeader">
         <div>
           <div className="fbTitle">Weekly Report</div>
-          <div className="fbRange">{fmtRange(weekStart, weekEnd)}</div>
+          <div className="fbRange">
+            {fmtRange(weekStart, weekEnd)}
+          </div>
         </div>
 
         <div className="fbHeaderRight">
           <button
             className="fbArrowBtn"
-            onClick={() => setWeekStartStr((s) => shiftWeekStart(s, -1))}
-          >
+            onClick={() =>
+              setWeekStartStr((s) => shiftWeekStart(s, -1))
+            }>
             ←
           </button>
 
-          <div className="fbWeekChip">{fmtRange(weekStart, weekEnd)}</div>
+          <div className="fbWeekChip">
+            {fmtRange(weekStart, weekEnd)}
+          </div>
 
           <button
             className="fbArrowBtn"
-            onClick={() => setWeekStartStr((s) => shiftWeekStart(s, 1))}
-            disabled={!canGoNext}
-          >
+            onClick={() =>
+              setWeekStartStr((s) => shiftWeekStart(s, 1))
+            }
+            disabled={!canGoNext}>
             →
           </button>
         </div>
@@ -336,17 +374,23 @@ export default function WeeklyFeedback() {
             <div className="fbStats">
               <div className="fbStat">
                 <div className="fbStatLabel">Completed</div>
-                <div className="fbStatValue">{report.completed}</div>
+                <div className="fbStatValue">
+                  {report.completed}
+                </div>
               </div>
 
               <div className="fbStat">
                 <div className="fbStatLabel">Total</div>
-                <div className="fbStatValue">{report.total}</div>
+                <div className="fbStatValue">
+                  {report.total}
+                </div>
               </div>
 
               <div className="fbStat">
                 <div className="fbStatLabel">Completion</div>
-                <div className="fbStatValue">{report.rate}%</div>
+                <div className="fbStatValue">
+                  {report.rate}%
+                </div>
               </div>
             </div>
           </div>
@@ -355,24 +399,36 @@ export default function WeeklyFeedback() {
             <div className="fbSectionTitle">Insights</div>
             <div className="fbInsights">
               <div className="fbInsightItem">
-                <div className="fbInsightLabel">Days active</div>
-                <div className="fbInsightValue">{report.daysActive} / 7</div>
+                <div className="fbInsightLabel">
+                  Days active
+                </div>
+                <div className="fbInsightValue">
+                  {report.daysActive} / 7
+                </div>
               </div>
 
               <div className="fbInsightItem">
                 <div className="fbInsightLabel">Best day</div>
-                <div className="fbInsightValue">{report.bestDayLabel}</div>
+                <div className="fbInsightValue">
+                  {report.bestDayLabel}
+                </div>
               </div>
 
               <div className="fbInsightItem">
-                <div className="fbInsightLabel">Longest streak</div>
-                <div className="fbInsightValue">{report.longestStreak} day(s)</div>
+                <div className="fbInsightLabel">
+                  Longest streak
+                </div>
+                <div className="fbInsightValue">
+                  {report.longestStreak} day(s)
+                </div>
               </div>
             </div>
           </div>
 
           <div className="fbCard">
-            <div className="fbSectionTitle">Self Reflection</div>
+            <div className="fbSectionTitle">
+              Self Reflection
+            </div>
             <textarea
               className="fbTextarea"
               value={reflection}
