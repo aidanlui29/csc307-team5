@@ -117,6 +117,28 @@ function normalizePriority(p) {
 }
 
 /* =========================
+   WEEKLY REFLECTION (Mongo)
+   ========================= */
+
+const WeeklyReflectionSchema = new mongoose.Schema(
+  {
+    ownerId: { type: String, required: true }, // keep as String (matches rest of app)
+    weekStart: { type: String, required: true }, // "YYYY-MM-DD"
+    text: { type: String, default: "" }
+  },
+  { timestamps: true }
+);
+
+WeeklyReflectionSchema.index(
+  { ownerId: 1, weekStart: 1 },
+  { unique: true }
+);
+
+const WeeklyReflection =
+  mongoose.models.WeeklyReflection ||
+  mongoose.model("WeeklyReflection", WeeklyReflectionSchema);
+
+/* =========================
    Health / debug
    ========================= */
 
@@ -252,7 +274,7 @@ app.put(
       const updated = await Planner.findOneAndUpdate(
         { _id: id, ownerId },
         { $set: update },
-        { new: true }
+        { returnDocument: "after" } // ✅ replaces deprecated { new: true }
       );
 
       if (!updated)
@@ -526,6 +548,123 @@ app.delete(
     } catch (err) {
       console.error(err);
       return res.status(400).send("Invalid request");
+    }
+  }
+);
+
+function getWeekRange(now = new Date()) {
+  const d = new Date(now);
+  const day = (d.getDay() + 6) % 7; // Mon=0 ... Sun=6
+  d.setHours(0, 0, 0, 0);
+  const start = new Date(d);
+  start.setDate(start.getDate() - day);
+
+  const end = new Date(start);
+  end.setDate(end.getDate() + 7);
+  return { start, end };
+}
+
+function toYmd(d) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/* =========================
+   FEEDBACK (Mongo)
+   ========================= */
+
+app.get("/api/feedback", authenticateUser, async (req, res) => {
+  try {
+    const { start, end } = getWeekRange(new Date());
+    const startYmd = toYmd(start);
+    const endExclusiveYmd = toYmd(end);
+
+    const [completedRes] = await Promise.all([
+      Event.aggregate([
+        {
+          $match: {
+            ownerId: req.user.userId,
+            kind: "task",
+            completed: true,
+            date: { $gte: startYmd, $lt: endExclusiveYmd }
+          }
+        },
+        { $count: "completedTasks" }
+      ])
+    ]);
+
+    const completedTasks = completedRes[0]?.completedTasks ?? 0;
+    res.json({ completedTasks, range: { start, end } });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send(err?.message || "Server error");
+  }
+});
+
+/* =========================
+   REFLECTIONS (Mongo)
+   ========================= */
+
+app.get(
+  "/api/reflections/week/:weekStart",
+  authenticateUser,
+  async (req, res) => {
+    try {
+      const ownerId = String(req.user.userId);
+      const { weekStart } = req.params;
+
+      if (!isYmd(weekStart))
+        return res.status(400).send("Invalid weekStart");
+
+      const doc = await WeeklyReflection.findOne({
+        ownerId,
+        weekStart
+      }).lean();
+      return res.json(
+        doc
+          ? { weekStart: doc.weekStart, text: doc.text }
+          : { weekStart, text: "" }
+      );
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .send(err?.message || "Server error");
+    }
+  }
+);
+
+app.put(
+  "/api/reflections/week/:weekStart",
+  authenticateUser,
+  async (req, res) => {
+    try {
+      const ownerId = String(req.user.userId);
+      const { weekStart } = req.params;
+      const { text } = req.body || {};
+
+      if (!isYmd(weekStart))
+        return res.status(400).send("Invalid weekStart");
+      if (text !== undefined && typeof text !== "string")
+        return res.status(400).send("Invalid text");
+
+      const updated = await WeeklyReflection.findOneAndUpdate(
+        { ownerId, weekStart },
+        { $set: { text: text ?? "" } },
+        { returnDocument: "after", upsert: true } // ✅ replaces deprecated { new: true }
+      ).lean();
+
+      return res.json({
+        weekStart: updated.weekStart,
+        text: updated.text
+      });
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .send(err?.message || "Server error");
     }
   }
 );
