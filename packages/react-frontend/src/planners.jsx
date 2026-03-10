@@ -538,20 +538,22 @@ export default function Planners() {
           <div
             className="plannerModal__card"
             onClick={(e) => e.stopPropagation()}>
-            <button
-              className="plannerModal__close"
-              onClick={closeModal}
-              aria-label="Close">
-              ✕
-            </button>
+            <div className="plannerModal__topRow">
+              <input
+                className="plannerModal__title"
+                placeholder="planner name"
+                value={plannerName}
+                onChange={(e) => setPlannerName(e.target.value)}
+              />
 
-            <input
-              className="plannerModal__title"
-              placeholder="planner name"
-              value={plannerName}
-              onChange={(e) => setPlannerName(e.target.value)}
-            />
-
+              <button
+                className="plannerModal__close plannerModal__close--topRow"
+                onClick={closeModal} // <-- use your existing close function name
+                aria-label="Close"
+                type="button">
+                ✕
+              </button>
+            </div>
             <div className="plannerModal__field">
               <label>Color</label>
               <div className="colorRowSimple">
