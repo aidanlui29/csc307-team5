@@ -12,7 +12,7 @@ models, including:
 
 ## Files Included
 
-- [UML Class Diagram](docs/uml-class-diagram.pdf)
+- [UML Class Diagram](uml-class-diagram.pdf)
 - Due to Miro free
   account limitations, the native board backup (.rtb) export is
   not available. The provided PDF reflects the final and
