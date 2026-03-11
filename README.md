@@ -1,20 +1,93 @@
-We are the Lab Rats! This is built off of IE4: Database
-Integration.
+# ClockedIn
 
-# TE5 – Authentication & Access Control
-
-This project implements JWT-based authentication using bcrypt
-for password hashing and Express middleware for protecting
-backend routes.
-
-After successful login or signup:
-
-- A JWT token is generated
-- The token is stored on the client
-- Protected routes verify the token before accessing data
-- Invalid or missing tokens return 401 Unauthorized
+## Project Blurb
+ClockedIn is a productivity planner designed for students who struggle with procrastination and want to build consistent work habits instead of relying on last-minute effort. Unlike traditional calendar tools that focus on scheduling events, ClockedIn promotes active productivity by attaching a timer to each task, encouraging focused work sessions and intentional time management. Users can create, edit, and prioritize tasks, view daily and weekly planners, separate responsibilities into different planners (e.g., school and work), and track their progress over time. With features such as focus mode and task time tracking, ClockedIn helps students better understand their workload, improve discipline, and develop sustainable productivity habits.
 
 ---
+
+## UI Prototype
+Link: [https://www.figma.com/design/Hc103T9Y2faSacd6bU2AbM/Planner?node-id=0-1&t=ORc1qbkaAyo2lqQT-1](https://www.figma.com/design/Hc103T9Y2faSacd6bU2AbM/Planner?node-id=0-1&t=ORc1qbkaAyo2lqQT-1)
+Last Updated: 2/15/2026
+
+---
+
+# Architecture
+
+This project is organized as a monorepo with separate frontend and backend packages.
+
+### Monorepo Structure
+
+- `packages/react-frontend/`  
+  React (Vite) frontend UI.
+
+- `packages/backend/`  
+  Express backend API with MongoDB (Mongoose) and JWT-based authentication.
+
+- `docs/`  
+  Architecture documentation and design artifacts for this project.
+
+### UML Class Diagram
+
+The UML Class Diagram is located in: `docs/uml/`  
+Last Updated: <DATE>
+
+## Development Environment Setup
+
+### Prerequisites
+- Node.js (v18+ recommended)
+- npm
+- MongoDB (local installation or MongoDB Atlas account)
+
+### Setup
+
+```bash
+git clone <repo-url>
+cd <repo-name>
+npm install
+```
+
+If dependencies are not automatically installed for sub-packages:
+
+```bash
+cd packages/backend
+npm install
+
+cd ../react-frontend
+npm install
+```
+
+### Environment Variables
+
+Create a `.env` file inside `packages/backend`:
+
+```bash
+PORT=5000
+MONGO_URI=<your-mongodb-connection-string>
+JWT_SECRET=<your-secret-key>
+```
+
+The frontend uses an `.env.production` file inside `packages/react-frontend` with:
+
+```bash
+VITE_API_BASE_URL=<your-backend-url>
+```
+
+Do not commit any `.env` files containing secrets.
+
+### Run the Application
+
+```bash
+npm run dev
+```
+
+Frontend: http://localhost:5173  
+Backend: http://localhost:5000
+
+# Security & Access Control
+- **Authentication:** Users authenticate with email + password (knowledge-based authentication). On login/signup, the backend issues a JSON Web Token (JWT).
+- **Password Security:** Passwords are hashed using `bcrypt` before storage. Plain-text passwords are never stored.
+- **Access Control:** Protected API routes require a valid JWT (`Authorization: Bearer <token>`). Planner and event data is scoped by the authenticated user ID (`ownerId`), preventing access to other users’ data.
+- **Secrets Management:** Sensitive values (e.g., `MONGODB_URI`, `TOKEN_SECRET`) are stored in environment variables and are not committed to the repository.
 
 ## Sequence Diagrams
 
@@ -30,21 +103,8 @@ After successful login or signup:
 
 ---
 
-### 3. Protected Planner API Request
+### 3. Protected API Request (Planner Example)
 
 <img src="https://github.com/user-attachments/assets/e4502666-e6ca-4a4c-8415-45b5852fbd99" width="800"/>
 
 ---
-
-## Security Behavior
-
-- **Sign-Up**
-  - 400 Bad Request (invalid input)
-
-- **Login**
-  - 401 Unauthorized (user not found)
-  - 401 Unauthorized (incorrect password)
-
-- **Protected Routes**
-  - 401 Unauthorized (missing token)
-  - 401 Unauthorized (invalid or expired token)
