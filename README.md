@@ -23,7 +23,7 @@ productivity habits.
 [Figma UI Prototype](https://www.figma.com/design/Hc103T9Y2faSacd6bU2AbM/Planner?node-id=0-1&t=ORc1qbkaAyo2lqQT-1)
 Last Updated: 2/15/2026
 
-[UML Class Diagram](docs/class-diagram.pdf) Las Updated:
+[UML Class Diagram](docs/uml-class-diagram.pdf) Last Updated:
 3/10/2026
 
 ---
