@@ -25,12 +25,18 @@ export default defineConfig([
       }
     },
     rules: {
-      "no-unused-vars": ["error", { varsIgnorePattern: "^[A-Z_]" }]
+      "no-unused-vars": [
+        "error",
+        { varsIgnorePattern: "^[A-Z_]" }
+      ]
     }
   },
 
   {
-    files: ["**/*.{test,spec}.{js,jsx}", "src/setupTests.{js,jsx}"],
+    files: [
+      "**/*.{test,spec}.{js,jsx}",
+      "src/setupTests.{js,jsx}"
+    ],
     languageOptions: {
       globals: {
         ...globals.browser,
