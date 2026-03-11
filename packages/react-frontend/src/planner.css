@@ -204,7 +204,7 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Today highlight (solid, not transparent) */
+/* Today highlight */
 .planner__dayheader--today {
   background: #2a2a2a;
 }
@@ -220,12 +220,12 @@ body {
   position: absolute;
   height: 2px;
   background: #ff2e2e;
-  z-index: 25; /* BELOW header (30) */
+  z-index: 25;
   pointer-events: none;
   box-shadow: 0 0 8px rgba(255, 46, 46, 0.35);
 }
 
-/* Event blocks ("tabs") */
+/* Event blocks */
 .planner__event {
   position: absolute;
   z-index: 20;
@@ -246,11 +246,11 @@ body {
 }
 
 .planner__event--schedule {
-  background: #59d66a; /* green */
+  background: #59d66a;
 }
 
 .planner__event--task {
-  background: #9b5cff; /* purple */
+  background: #9b5cff;
 }
 
 /* ---------- Modal ---------- */
@@ -268,16 +268,12 @@ body {
 
 .plannerModal__card {
   position: relative;
-
   width: min(720px, calc(100vw - 48px));
   margin: 90px auto;
-
   background: #ffffff;
   color: #111;
   border-radius: 22px;
-
   padding: 22px 22px 18px;
-
   box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
 }
 
@@ -285,19 +281,14 @@ body {
   position: absolute;
   top: 14px;
   right: 14px;
-
   width: 36px;
   height: 36px;
-
   border: none;
   background: transparent;
-
   font-size: 28px;
   line-height: 1;
-
   display: grid;
   place-items: center;
-
   cursor: pointer;
 }
 
@@ -364,10 +355,10 @@ body {
 .plannerModal__field label {
   font-weight: 900;
   opacity: 0.75;
-  font-size: 10px; /* smaller */
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  margin-bottom: 2px; /* tighter */
+  margin-bottom: 2px;
 }
 
 .plannerModal__field input,
@@ -432,30 +423,29 @@ body {
 /* ---------- Dropdowns for Task Priority/Status ---------- */
 .plannerModal__fieldRow {
   display: flex;
-  gap: 8px; /* closer together */
-  align-items: center; /* matches buttons */
+  gap: 8px;
+  align-items: center;
 }
 
 .plannerModal__selectWrap {
   position: relative;
-  width: auto; /* key: don’t stretch */
+  width: auto;
 }
 
 .plannerModal__select {
   appearance: none;
   border: 1px solid rgba(0, 0, 0, 0.15);
   outline: none;
-  background: #e9e9e9; /* same vibe as your pills */
+  background: #e9e9e9;
   border-radius: 10px;
-  height: 32px; /* SAME as nav buttons */
-  padding: 0 28px 0 10px; /* compact */
+  height: 32px;
+  padding: 0 28px 0 10px;
   font-weight: 800;
   font-size: 13px;
   cursor: pointer;
   line-height: 32px;
 }
 
-/* Priority outline colors */
 .plannerModal__select--low {
   box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.55);
 }
@@ -466,7 +456,6 @@ body {
   box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.65);
 }
 
-/* Status outline colors */
 .plannerModal__select--complete {
   box-shadow: inset 0 0 0 2px rgba(22, 163, 74, 0.65);
 }
@@ -547,6 +536,8 @@ body {
   padding: 18px 18px 22px;
   margin: 140px auto;
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+  overflow: hidden; /* prevents any child from sticking out */
 }
 
 .focusModal__top {
@@ -620,4 +611,122 @@ body {
     filter 0.25s ease,
     opacity 0.25s ease;
   pointer-events: none;
+}
+
+/* =========================================================
+   NEW: Focus duration row (prevents overflow, side-by-side)
+   ========================================================= */
+.focusModal__durations {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 8px;
+  margin-top: 2px;
+}
+
+.focusModal__durRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.focusModal__durLabel {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.focusModal__durText {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 800;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.focusModal__durInput {
+  width: 72px;
+  flex-shrink: 0;
+  height: 34px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.22);
+  color: white;
+  outline: none;
+  padding: 0 10px;
+  font-weight: 900;
+  box-sizing: border-box;
+}
+
+/* remove spinner arrows (optional aesthetic) */
+.focusModal__durInput::-webkit-outer-spin-button,
+.focusModal__durInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.focusModal__durInput[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* =========================================================
+   NEW: Recurrence styling (clean expand under Date/Time)
+   ========================================================= */
+.plannerModal__recur {
+  margin-top: 2px;
+}
+
+.plannerModal__recurToggleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.plannerModal__recurToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  color: #111;
+}
+
+.plannerModal__recurGrid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.plannerModal__recurCol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.plannerModal__recurHint {
+  font-size: 12px;
+  opacity: 0.7;
+  font-weight: 800;
+}
+
+.plannerModal__recurControl {
+  height: 40px;
+  border-radius: 12px;
+  border: none;
+  outline: none;
+  background: #e0e0e0;
+  padding: 0 12px;
+  font-weight: 800;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.plannerModal__recurNote {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+  font-size: 12px;
+  opacity: 0.7;
+  font-weight: 700;
 }

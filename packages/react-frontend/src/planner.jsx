@@ -1,9 +1,4 @@
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState
-} from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { authHeaders } from "./auth.jsx";
 import "./planner.css";
@@ -34,22 +29,14 @@ function sameDay(a, b) {
 }
 function monthTitleForWeek(weekStart) {
   const weekEnd = addDays(weekStart, 6);
-  const startMonth = weekStart.toLocaleString(undefined, {
-    month: "long"
-  });
-  const endMonth = weekEnd.toLocaleString(undefined, {
-    month: "long"
-  });
+  const startMonth = weekStart.toLocaleString(undefined, { month: "long" });
+  const endMonth = weekEnd.toLocaleString(undefined, { month: "long" });
   const startYear = weekStart.getFullYear();
   const endYear = weekEnd.getFullYear();
 
-  if (
-    weekStart.getMonth() === weekEnd.getMonth() &&
-    startYear === endYear
-  )
+  if (weekStart.getMonth() === weekEnd.getMonth() && startYear === endYear)
     return `${startMonth} ${startYear}`;
-  if (startYear === endYear)
-    return `${startMonth} – ${endMonth} ${startYear}`;
+  if (startYear === endYear) return `${startMonth} – ${endMonth} ${startYear}`;
   return `${startMonth} ${startYear} – ${endMonth} ${endYear}`;
 }
 function formatHour(hour24) {
@@ -82,19 +69,9 @@ export default function Planner() {
   const { id } = useParams(); // plannerId
   const navigate = useNavigate();
 
-  const dayNames = [
-    "Sun",
-    "Mon",
-    "Tue",
-    "Wed",
-    "Thu",
-    "Fri",
-    "Sat"
-  ];
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-  const [anchorDate, setAnchorDate] = useState(
-    () => new Date()
-  );
+  const [anchorDate, setAnchorDate] = useState(() => new Date());
   const [now, setNow] = useState(() => new Date());
 
   const [events, setEvents] = useState([]);
@@ -120,8 +97,7 @@ export default function Planner() {
         }
         if (!res.ok) {
           const msg = await res.text();
-          if (!cancelled)
-            setPageError(msg || "Failed to load events");
+          if (!cancelled) setPageError(msg || "Failed to load events");
           return;
         }
 
@@ -131,8 +107,7 @@ export default function Planner() {
 
         // ---- migrate legacy localStorage (only once per planner)
         const migratedFlag = `clockedInMigratedEvents_v1_${id}`;
-        const alreadyMigrated =
-          localStorage.getItem(migratedFlag) === "1";
+        const alreadyMigrated = localStorage.getItem(migratedFlag) === "1";
 
         if (!alreadyMigrated) {
           let legacy = [];
@@ -147,44 +122,29 @@ export default function Planner() {
           // Only migrate if server has none (prevents duplicates)
           if (legacy.length > 0 && serverEvents.length === 0) {
             for (const ev of legacy) {
-              if (!ev?.title || !ev?.date || !ev?.kind)
-                continue;
-              if (
-                typeof ev.startMin !== "number" ||
-                typeof ev.endMin !== "number"
-              )
-                continue;
+              if (!ev?.title || !ev?.date || !ev?.kind) continue;
+              if (typeof ev.startMin !== "number" || typeof ev.endMin !== "number") continue;
 
-              // defaults for tasks
-              const priority =
-                ev.kind === "task"
-                  ? ev.priority || "medium"
-                  : undefined;
-              const completed =
-                ev.kind === "task"
-                  ? Boolean(ev.completed)
-                  : undefined;
+              const priority = ev.kind === "task" ? ev.priority || "medium" : undefined;
+              const completed = ev.kind === "task" ? Boolean(ev.completed) : undefined;
 
-              const createRes = await fetch(
-                `/api/planners/${id}/events`,
-                {
-                  method: "POST",
-                  headers: {
-                    ...authHeaders(),
-                    "Content-Type": "application/json"
-                  },
-                  body: JSON.stringify({
-                    kind: ev.kind,
-                    date: ev.date,
-                    title: ev.title,
-                    desc: ev.desc || "",
-                    startMin: ev.startMin,
-                    endMin: ev.endMin,
-                    priority,
-                    completed
-                  })
-                }
-              );
+              const createRes = await fetch(`/api/planners/${id}/events`, {
+                method: "POST",
+                headers: {
+                  ...authHeaders(),
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  kind: ev.kind,
+                  date: ev.date,
+                  title: ev.title,
+                  desc: ev.desc || "",
+                  startMin: ev.startMin,
+                  endMin: ev.endMin,
+                  priority,
+                  completed
+                })
+              });
 
               if (createRes.status === 401) {
                 navigate("/login");
@@ -193,26 +153,19 @@ export default function Planner() {
             }
 
             // re-fetch after migration
-            const res2 = await fetch(
-              `/api/planners/${id}/events`,
-              {
-                headers: authHeaders()
-              }
-            );
+            const res2 = await fetch(`/api/planners/${id}/events`, {
+              headers: authHeaders()
+            });
             if (res2.ok) {
               const data2 = await res2.json();
-              if (!cancelled)
-                setEvents(Array.isArray(data2) ? data2 : []);
+              if (!cancelled) setEvents(Array.isArray(data2) ? data2 : []);
             }
           }
 
           localStorage.setItem(migratedFlag, "1");
         }
       } catch {
-        if (!cancelled)
-          setPageError(
-            "Network error. Is the backend running?"
-          );
+        if (!cancelled) setPageError("Network error. Is the backend running?");
       } finally {
         if (!cancelled) setLoadingEvents(false);
       }
@@ -228,20 +181,26 @@ export default function Planner() {
   /* ---------- Focus timer ---------- */
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusMode, setFocusMode] = useState("work");
-  const WORK_SECONDS = 25 * 60;
-  const BREAK_SECONDS = 5 * 60;
 
-  const [_durationSec, setDurationSec] = useState(WORK_SECONDS);
-  const [remainingSec, setRemainingSec] =
-    useState(WORK_SECONDS);
+  // defaults (minutes)
+  const [workMinutes, setWorkMinutes] = useState(25);
+  const [breakMinutes, setBreakMinutes] = useState(5);
+
+  const [_durationSec, setDurationSec] = useState(25 * 60);
+  const [remainingSec, setRemainingSec] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef(null);
+
+  function getModeDurationSec(mode) {
+    const mins = mode === "work" ? workMinutes : breakMinutes;
+    const safeMins = Math.max(1, Number(mins) || 1);
+    return safeMins * 60;
+  }
 
   function openFocus() {
     setFocusOpen(true);
     setIsRunning(false);
-    const d =
-      focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
+    const d = getModeDurationSec(focusMode);
     setDurationSec(d);
     setRemainingSec(d);
   }
@@ -259,7 +218,7 @@ export default function Planner() {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
 
-    const d = mode === "work" ? WORK_SECONDS : BREAK_SECONDS;
+    const d = getModeDurationSec(mode);
     setDurationSec(d);
     setRemainingSec(d);
   }
@@ -274,8 +233,7 @@ export default function Planner() {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
 
-    const d =
-      focusMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
+    const d = getModeDurationSec(focusMode);
     setDurationSec(d);
     setRemainingSec(d);
   }
@@ -315,22 +273,16 @@ export default function Planner() {
   const [editingId, setEditingId] = useState(null);
   const [selectedEventId, setSelectedEventId] = useState(null);
 
-  // NEW: task-only fields
-  const [priority, setPriority] = useState("medium"); // low | medium | high
-  const [completed, setCompleted] = useState(false); // boolean
+  // task fields
+  const [priority, setPriority] = useState("medium");
+  const [completed, setCompleted] = useState(false);
 
   const today = now;
   const todayIndex = today.getDay();
 
-  const weekStart = useMemo(
-    () => startOfWeek(anchorDate),
-    [anchorDate]
-  );
+  const weekStart = useMemo(() => startOfWeek(anchorDate), [anchorDate]);
   const weekDates = useMemo(
-    () =>
-      Array.from({ length: 7 }, (_, i) =>
-        addDays(weekStart, i)
-      ),
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
     [weekStart]
   );
   const isCurrentWeek = useMemo(() => {
@@ -341,11 +293,7 @@ export default function Planner() {
   const START_HOUR = 0;
   const END_HOUR = 23;
   const hours = useMemo(
-    () =>
-      Array.from(
-        { length: END_HOUR - START_HOUR + 1 },
-        (_, i) => i + START_HOUR
-      ),
+    () => Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => i + START_HOUR),
     []
   );
 
@@ -367,16 +315,14 @@ export default function Planner() {
 
     computeLayout();
     window.addEventListener("resize", computeLayout);
-    return () =>
-      window.removeEventListener("resize", computeLayout);
+    return () => window.removeEventListener("resize", computeLayout);
   }, []);
 
   const [nowLineStyle, setNowLineStyle] = useState(null);
   useEffect(() => {
     const tick = () => setNow(new Date());
     const msToNextMinute =
-      (60 - new Date().getSeconds()) * 1000 -
-      new Date().getMilliseconds();
+      (60 - new Date().getSeconds()) * 1000 - new Date().getMilliseconds();
 
     const t = setTimeout(() => {
       tick();
@@ -386,8 +332,7 @@ export default function Planner() {
 
     return () => {
       clearTimeout(t);
-      if (window.__plannerNowInterval)
-        clearInterval(window.__plannerNowInterval);
+      if (window.__plannerNowInterval) clearInterval(window.__plannerNowInterval);
       window.__plannerNowInterval = null;
     };
   }, []);
@@ -399,31 +344,24 @@ export default function Planner() {
       return;
     }
 
-    const minutesIntoDay =
-      now.getHours() * 60 + now.getMinutes();
+    const minutesIntoDay = now.getHours() * 60 + now.getMinutes();
     const startMinutes = START_HOUR * 60;
     const endMinutes = (END_HOUR + 1) * 60;
 
-    if (
-      minutesIntoDay < startMinutes ||
-      minutesIntoDay > endMinutes
-    ) {
+    if (minutesIntoDay < startMinutes || minutesIntoDay > endMinutes) {
       setNowLineStyle(null);
       return;
     }
 
     const grid = gridRef.current;
-    const todayHeaderEl = grid.querySelector(
-      `[data-day-index="${todayIndex}"]`
-    );
+    const todayHeaderEl = grid.querySelector(`[data-day-index="${todayIndex}"]`);
     if (!todayHeaderEl) return;
 
     const gridRect = grid.getBoundingClientRect();
     const todayRect = todayHeaderEl.getBoundingClientRect();
 
     const minutesFromStart = minutesIntoDay - startMinutes;
-    const top =
-      layout.headerH + (minutesFromStart / 60) * layout.rowH;
+    const top = layout.headerH + (minutesFromStart / 60) * layout.rowH;
 
     const left = todayRect.left - gridRect.left;
     const width = todayRect.width;
@@ -438,19 +376,15 @@ export default function Planner() {
   /* ---------- form fields ---------- */
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState("schedule");
-  const [dateStr, setDateStr] = useState(() =>
-    toDateInputValue(new Date())
-  );
+  const [dateStr, setDateStr] = useState(() => toDateInputValue(new Date()));
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
   const [desc, setDesc] = useState("");
 
-  //  recurrence
+  // recurrence
   const [repeatEnabled, setRepeatEnabled] = useState(false);
   const [repeatEveryWeeks, setRepeatEveryWeeks] = useState(2);
-  const [repeatUntil, setRepeatUntil] = useState(() =>
-    toDateInputValue(new Date())
-  );
+  const [repeatUntil, setRepeatUntil] = useState(() => toDateInputValue(new Date()));
 
   function openAddNew() {
     setSelectedEventId(null);
@@ -467,7 +401,6 @@ export default function Planner() {
     setRepeatEveryWeeks(2);
     setRepeatUntil(toDateInputValue(new Date()));
 
-    // defaults for new task fields (only matter if user switches to task)
     setPriority("medium");
     setCompleted(false);
 
@@ -487,6 +420,8 @@ export default function Planner() {
 
     setPriority(ev.priority || "medium");
     setCompleted(Boolean(ev.completed));
+
+    // recurrence not used in edit
     setRepeatEnabled(false);
     setRepeatEveryWeeks(2);
     setRepeatUntil(ev.date);
@@ -504,13 +439,11 @@ export default function Planner() {
   async function handleSave() {
     setFormError("");
 
-    if (!title.trim())
-      return setFormError("Please enter a title.");
+    if (!title.trim()) return setFormError("Please enter a title.");
 
     const sMin = timeToMinutes(startTime);
     const eMin = timeToMinutes(endTime);
-    if (eMin <= sMin)
-      return setFormError("End time must be after start time.");
+    if (eMin <= sMin) return setFormError("End time must be after start time.");
 
     setSavingEvent(true);
     try {
@@ -523,7 +456,6 @@ export default function Planner() {
         desc: desc.trim()
       };
 
-      // Only attach these for tasks (keeps schedule clean)
       if (kind === "task") {
         payload.priority = priority;
         payload.completed = completed;
@@ -540,34 +472,22 @@ export default function Planner() {
         });
 
         if (res.status === 401) return navigate("/login");
-        if (!res.ok)
-          throw new Error(
-            (await res.text()) || "Failed to update event"
-          );
+        if (!res.ok) throw new Error((await res.text()) || "Failed to update event");
 
         const updated = await res.json();
-        setEvents((prev) =>
-          prev.map((e) => (e.id === updated.id ? updated : e))
-        );
+        setEvents((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
       } else {
-        // ---- NEW: recurrence creates multiple events (schedule only)
-        const isRecurring =
-          kind === "schedule" && repeatEnabled && repeatUntil;
+        const isRecurring = kind === "schedule" && repeatEnabled && repeatUntil;
 
         if (isRecurring) {
           const startDate = new Date(`${dateStr}T00:00:00`);
           const untilDate = new Date(`${repeatUntil}T00:00:00`);
 
-          if (
-            Number.isNaN(startDate.getTime()) ||
-            Number.isNaN(untilDate.getTime())
-          )
+          if (Number.isNaN(startDate.getTime()) || Number.isNaN(untilDate.getTime()))
             throw new Error("Invalid recurrence dates.");
 
           if (untilDate < startDate)
-            throw new Error(
-              "Recurrence end date must be on/after the start date."
-            );
+            throw new Error("Recurrence end date must be on/after the start date.");
 
           const createdEvents = [];
           let cursor = new Date(startDate);
@@ -578,51 +498,36 @@ export default function Planner() {
               date: toDateInputValue(cursor)
             };
 
-            const res = await fetch(
-              `/api/planners/${id}/events`,
-              {
-                method: "POST",
-                headers: {
-                  ...authHeaders(),
-                  "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payloadForDate)
-              }
-            );
-
-            if (res.status === 401) return navigate("/login");
-            if (!res.ok)
-              throw new Error(
-                (await res.text()) ||
-                  "Failed to create recurring event"
-              );
-
-            createdEvents.push(await res.json());
-
-            // step by weeks (1 = weekly, 2 = biweekly)
-            cursor = addWeeks(cursor, repeatEveryWeeks);
-          }
-
-          setEvents((prev) => [...prev, ...createdEvents]);
-        } else {
-          // normal single create
-          const res = await fetch(
-            `/api/planners/${id}/events`,
-            {
+            const res = await fetch(`/api/planners/${id}/events`, {
               method: "POST",
               headers: {
                 ...authHeaders(),
                 "Content-Type": "application/json"
               },
-              body: JSON.stringify(payload)
-            }
-          );
+              body: JSON.stringify(payloadForDate)
+            });
+
+            if (res.status === 401) return navigate("/login");
+            if (!res.ok)
+              throw new Error((await res.text()) || "Failed to create recurring event");
+
+            createdEvents.push(await res.json());
+            cursor = addWeeks(cursor, repeatEveryWeeks);
+          }
+
+          setEvents((prev) => [...prev, ...createdEvents]);
+        } else {
+          const res = await fetch(`/api/planners/${id}/events`, {
+            method: "POST",
+            headers: {
+              ...authHeaders(),
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
 
           if (res.status === 401) return navigate("/login");
-          if (!res.ok)
-            throw new Error(
-              (await res.text()) || "Failed to create event"
-            );
+          if (!res.ok) throw new Error((await res.text()) || "Failed to create event");
 
           const created = await res.json();
           setEvents((prev) => [...prev, created]);
@@ -646,10 +551,7 @@ export default function Planner() {
       });
 
       if (res.status === 401) return navigate("/login");
-      if (!res.ok)
-        throw new Error(
-          (await res.text()) || "Failed to delete event"
-        );
+      if (!res.ok) throw new Error((await res.text()) || "Failed to delete event");
 
       setEvents((prev) => prev.filter((e) => e.id !== eventId));
       setSelectedEventId(null);
@@ -662,30 +564,22 @@ export default function Planner() {
     if (!layout || !gridRef.current) return { display: "none" };
 
     const selectedDate = new Date(`${ev.date}T00:00:00`);
-    const inThisWeek = weekDates.some((d) =>
-      sameDay(d, selectedDate)
-    );
+    const inThisWeek = weekDates.some((d) => sameDay(d, selectedDate));
     if (!inThisWeek) return { display: "none" };
 
-    const dayIdx = weekDates.findIndex((d) =>
-      sameDay(d, selectedDate)
-    );
+    const dayIdx = weekDates.findIndex((d) => sameDay(d, selectedDate));
     if (dayIdx < 0) return { display: "none" };
 
     const gridRect = gridRef.current.getBoundingClientRect();
-    const dayHeaderEl = gridRef.current.querySelector(
-      `[data-day-index="${dayIdx}"]`
-    );
+    const dayHeaderEl = gridRef.current.querySelector(`[data-day-index="${dayIdx}"]`);
     if (!dayHeaderEl) return { display: "none" };
 
     const dayRect = dayHeaderEl.getBoundingClientRect();
     const left = dayRect.left - gridRect.left;
     const width = dayRect.width;
 
-    const top =
-      layout.headerH + (ev.startMin / 60) * layout.rowH;
-    const height =
-      ((ev.endMin - ev.startMin) / 60) * layout.rowH;
+    const top = layout.headerH + (ev.startMin / 60) * layout.rowH;
+    const height = ((ev.endMin - ev.startMin) / 60) * layout.rowH;
 
     return {
       left: `${left + 8}px`,
@@ -709,8 +603,7 @@ export default function Planner() {
     let left = leftNum + parseFloat(s.width) + 12;
     let top = topNum;
 
-    if (left + popW > gridW - 8)
-      left = Math.max(8, leftNum - popW - 12);
+    if (left + popW > gridW - 8) left = Math.max(8, leftNum - popW - 12);
     if (top < 70) top = 70;
 
     return {
@@ -720,20 +613,16 @@ export default function Planner() {
     };
   }
 
-  const selectedEvent = selectedEventId
-    ? events.find((e) => e.id === selectedEventId)
-    : null;
+  const selectedEvent = selectedEventId ? events.find((e) => e.id === selectedEventId) : null;
 
   return (
     <div
       className={`planner ${focusOpen ? "planner--blurred" : ""}`}
       onClick={() => {
-        if (focusOpen) return; // blur mode should not allow clicking background to do stuff
+        if (focusOpen) return;
         setSelectedEventId(null);
       }}>
-      <div
-        className="planner__topbar"
-        onClick={(e) => e.stopPropagation()}>
+      <div className="planner__topbar" onClick={(e) => e.stopPropagation()}>
         <div className="planner__left">
           <button
             className="planner__menuIcon"
@@ -741,9 +630,7 @@ export default function Planner() {
             aria-label="Open menu"
             onClick={(e) => {
               e.stopPropagation();
-              window.dispatchEvent(
-                new CustomEvent("clockedIn:openMenu")
-              );
+              window.dispatchEvent(new CustomEvent("clockedIn:openMenu"));
             }}>
             <span className="planner__hamburgerLine" />
             <span className="planner__hamburgerLine" />
@@ -753,44 +640,29 @@ export default function Planner() {
           <div className="planner__nav">
             <button
               className="planner__navbtn"
-              onClick={() =>
-                setAnchorDate((d) => addWeeks(d, -1))
-              }
+              onClick={() => setAnchorDate((d) => addWeeks(d, -1))}
               type="button">
               ◀
             </button>
-            <button
-              className="planner__navbtn"
-              onClick={() => setAnchorDate(new Date())}
-              type="button">
+            <button className="planner__navbtn" onClick={() => setAnchorDate(new Date())} type="button">
               Today
             </button>
             <button
               className="planner__navbtn"
-              onClick={() =>
-                setAnchorDate((d) => addWeeks(d, 1))
-              }
+              onClick={() => setAnchorDate((d) => addWeeks(d, 1))}
               type="button">
               ▶
             </button>
           </div>
         </div>
 
-        <div className="planner__monthTitle">
-          {monthTitleForWeek(weekStart)}
-        </div>
+        <div className="planner__monthTitle">{monthTitleForWeek(weekStart)}</div>
 
         <div className="planner__actions">
-          <button
-            className="planner__add"
-            type="button"
-            onClick={openAddNew}>
+          <button className="planner__add" type="button" onClick={openAddNew}>
             + add
           </button>
-          <button
-            className="planner__focus"
-            type="button"
-            onClick={openFocus}>
+          <button className="planner__focus" type="button" onClick={openFocus}>
             focus
           </button>
         </div>
@@ -809,24 +681,16 @@ export default function Planner() {
               <div
                 key={idx}
                 data-day-index={idx}
-                className={`planner__dayheader ${isCurrentWeek && idx === todayIndex ? "planner__dayheader--today" : ""}`}>
-                <div className="planner__daydate">
-                  {d.getDate()}
-                </div>
-                <div className="planner__dayname">
-                  {dayNames[idx]}
-                </div>
+                className={`planner__dayheader ${
+                  isCurrentWeek && idx === todayIndex ? "planner__dayheader--today" : ""
+                }`}>
+                <div className="planner__daydate">{d.getDate()}</div>
+                <div className="planner__dayname">{dayNames[idx]}</div>
               </div>
             ))}
           </div>
 
-          {nowLineStyle && (
-            <div
-              className="planner__nowLine"
-              style={nowLineStyle}
-              aria-hidden="true"
-            />
-          )}
+          {nowLineStyle && <div className="planner__nowLine" style={nowLineStyle} aria-hidden="true" />}
 
           {(loadingEvents || pageError) && (
             <div style={{ padding: 12, opacity: 0.9 }}>
@@ -837,39 +701,26 @@ export default function Planner() {
           {events.map((ev) => (
             <div
               key={ev.id}
-              className={`planner__event ${ev.kind === "schedule" ? "planner__event--schedule" : "planner__event--task"}`}
+              className={`planner__event ${
+                ev.kind === "schedule" ? "planner__event--schedule" : "planner__event--task"
+              }`}
               style={getEventStyle(ev)}
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedEventId(ev.id);
               }}
               title={ev.desc || ev.title}>
-              <div className="planner__eventTitle">
-                {ev.title}
-              </div>
+              <div className="planner__eventTitle">{ev.title}</div>
             </div>
           ))}
 
           {selectedEvent && (
-            <div
-              className="plannerPopover"
-              style={getPopoverStyle(selectedEvent)}
-              onClick={(e) => e.stopPropagation()}>
-              <div className="plannerPopover__title">
-                {selectedEvent.title}
-              </div>
-              <div className="plannerPopover__desc">
-                {selectedEvent.desc
-                  ? selectedEvent.desc
-                  : "description..."}
-              </div>
+            <div className="plannerPopover" style={getPopoverStyle(selectedEvent)} onClick={(e) => e.stopPropagation()}>
+              <div className="plannerPopover__title">{selectedEvent.title}</div>
+              <div className="plannerPopover__desc">{selectedEvent.desc ? selectedEvent.desc : "description..."}</div>
 
               <div className="plannerPopover__actions">
-                <button
-                  className="plannerPopover__iconBtn"
-                  type="button"
-                  title="Edit"
-                  onClick={() => openEdit(selectedEvent)}>
+                <button className="plannerPopover__iconBtn" type="button" title="Edit" onClick={() => openEdit(selectedEvent)}>
                   <Pencil size={28} />
                 </button>
                 <button
@@ -885,9 +736,7 @@ export default function Planner() {
 
           {hours.map((hour) => (
             <div key={hour} className="planner__row">
-              <div className="planner__time">
-                {formatHour(hour)}
-              </div>
+              <div className="planner__time">{formatHour(hour)}</div>
               {weekDates.map((_, idx) => (
                 <div
                   key={`${idx}-${hour}`}
@@ -900,25 +749,11 @@ export default function Planner() {
       </div>
 
       {addOpen && (
-        <div
-          className="plannerModal"
-          role="dialog"
-          aria-modal="true"
-          onClick={closeAdd}>
+        <div className="plannerModal" role="dialog" aria-modal="true" onClick={closeAdd}>
           <div className="plannerModal__backdrop" />
-          <div
-            className="plannerModal__card"
-            onClick={(e) => e.stopPropagation()}>
-            {/* top spacer so X has its own area */}
+          <div className="plannerModal__card" onClick={(e) => e.stopPropagation()}>
             <div style={{ height: 34 }} aria-hidden="true" />
-            <button
-              className="plannerModal__close"
-              onClick={closeAdd}
-              aria-label="Close"
-              style={{
-                top: 18,
-                right: 22
-              }}>
+            <button className="plannerModal__close" onClick={closeAdd} aria-label="Close" style={{ top: 18, right: 22 }}>
               ✕
             </button>
 
@@ -928,8 +763,8 @@ export default function Planner() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
+
             <div className="plannerModal__row">
-              {/* LEFT: Priority + Status ONLY for task */}
               {kind === "task" ? (
                 <div className="plannerModal__fieldRow">
                   <div className="plannerModal__field">
@@ -940,13 +775,11 @@ export default function Planner() {
                           priority === "low"
                             ? "plannerModal__select--low"
                             : priority === "high"
-                              ? "plannerModal__select--high"
-                              : "plannerModal__select--medium"
+                            ? "plannerModal__select--high"
+                            : "plannerModal__select--medium"
                         }`}
                         value={priority}
-                        onChange={(e) =>
-                          setPriority(e.target.value)
-                        }>
+                        onChange={(e) => setPriority(e.target.value)}>
                         <option value="low">low</option>
                         <option value="medium">medium</option>
                         <option value="high">high</option>
@@ -958,21 +791,13 @@ export default function Planner() {
                     <label>Status</label>
                     <div className="plannerModal__selectWrap">
                       <select
-                        className={`plannerModal__select ${completed ? "plannerModal__select--complete" : "plannerModal__select--notcomplete"}`}
-                        value={
-                          completed ? "complete" : "notcomplete"
-                        }
-                        onChange={(e) =>
-                          setCompleted(
-                            e.target.value === "complete"
-                          )
-                        }>
-                        <option value="notcomplete">
-                          not complete
-                        </option>
-                        <option value="complete">
-                          complete
-                        </option>
+                        className={`plannerModal__select ${
+                          completed ? "plannerModal__select--complete" : "plannerModal__select--notcomplete"
+                        }`}
+                        value={completed ? "complete" : "notcomplete"}
+                        onChange={(e) => setCompleted(e.target.value === "complete")}>
+                        <option value="notcomplete">not complete</option>
+                        <option value="complete">complete</option>
                       </select>
                     </div>
                   </div>
@@ -981,7 +806,6 @@ export default function Planner() {
                 <div />
               )}
 
-              {/* RIGHT: schedule/task toggle */}
               <div className="plannerModal__toggle">
                 <button
                   type="button"
@@ -994,158 +818,86 @@ export default function Planner() {
                   className={`plannerModal__pill ${kind === "task" ? "is-active is-task" : ""}`}
                   onClick={() => {
                     setKind("task");
-                    // ensure defaults when switching to task
                     if (!priority) setPriority("medium");
-                    // completed keeps existing value
                   }}>
                   task
                 </button>
               </div>
             </div>
 
+            {/* Date + Time row */}
             <div className="plannerModal__row plannerModal__row--stack">
               <div className="plannerModal__field">
                 <label>Date</label>
-                <input
-                  type="date"
-                  value={dateStr}
-                  onChange={(e) => setDateStr(e.target.value)}
-                />
+                <input type="date" value={dateStr} onChange={(e) => setDateStr(e.target.value)} />
               </div>
-
-              {/* Recurrence (schedule only, create-mode only) */}
-              {kind === "schedule" && !editingId && (
-                <div className="plannerModal__field">
-                  <label>Recurrence</label>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 12,
-                      alignItems: "center",
-                      flexWrap: "wrap"
-                    }}>
-                    <label
-                      style={{
-                        display: "flex",
-                        gap: 8,
-                        alignItems: "center"
-                      }}>
-                      <input
-                        type="checkbox"
-                        checked={repeatEnabled}
-                        onChange={(e) =>
-                          setRepeatEnabled(e.target.checked)
-                        }
-                      />
-                      Repeat
-                    </label>
-
-                    {repeatEnabled && (
-                      <>
-                        <select
-                          value={repeatEveryWeeks}
-                          onChange={(e) =>
-                            setRepeatEveryWeeks(
-                              Number(e.target.value)
-                            )
-                          }
-                          style={{
-                            height: 40,
-                            borderRadius: 12,
-                            border:
-                              "1px solid rgba(0,0,0,0.12)",
-                            padding: "0 12px"
-                          }}>
-                          <option value={1}>Every week</option>
-                          <option value={2}>
-                            Every other week
-                          </option>
-                        </select>
-
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: 8,
-                            alignItems: "center"
-                          }}>
-                          <span style={{ opacity: 0.7 }}>
-                            until
-                          </span>
-                          <input
-                            type="date"
-                            value={repeatUntil}
-                            onChange={(e) =>
-                              setRepeatUntil(e.target.value)
-                            }
-                            style={{
-                              height: 40,
-                              borderRadius: 12,
-                              border:
-                                "1px solid rgba(0,0,0,0.12)",
-                              padding: "0 12px"
-                            }}
-                          />
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {repeatEnabled && (
-                    <div
-                      style={{
-                        marginTop: 8,
-                        fontSize: 12,
-                        opacity: 0.7
-                      }}>
-                      Repeats on the same weekday as the
-                      selected date.
-                    </div>
-                  )}
-                </div>
-              )}
 
               <div className="plannerModal__field plannerModal__field--times">
                 <label>Time</label>
                 <div className="plannerModal__times">
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) =>
-                      setStartTime(e.target.value)
-                    }
-                  />
+                  <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
                   <span className="plannerModal__dash">–</span>
-                  <input
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                  />
+                  <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
                 </div>
               </div>
             </div>
 
-            <div className="plannerModal__field">
-              <label>Description</label>
-              <textarea
-                placeholder="description..."
-                value={desc}
-                onChange={(e) => setDesc(e.target.value)}
-              />
-            </div>
+            {/* Recurrence moved under Date/Time and above Description */}
+            {kind === "schedule" && !editingId && (
+              <div className="plannerModal__field plannerModal__recur">
+                <label>Recurrence</label>
 
-            {formError && (
-              <div className="plannerModal__error">
-                {formError}
+                <div className="plannerModal__recurToggleRow">
+                  <label className="plannerModal__recurToggle">
+                    <input
+                      type="checkbox"
+                      checked={repeatEnabled}
+                      onChange={(e) => setRepeatEnabled(e.target.checked)}
+                    />
+                    Repeat
+                  </label>
+                </div>
+
+                {repeatEnabled && (
+                  <div className="plannerModal__recurGrid">
+                    <div className="plannerModal__recurCol">
+                      <div className="plannerModal__recurHint">How often</div>
+                      <select
+                        className="plannerModal__recurControl"
+                        value={repeatEveryWeeks}
+                        onChange={(e) => setRepeatEveryWeeks(Number(e.target.value))}>
+                        <option value={1}>Every week</option>
+                        <option value={2}>Every other week</option>
+                      </select>
+                    </div>
+
+                    <div className="plannerModal__recurCol">
+                      <div className="plannerModal__recurHint">Until</div>
+                      <input
+                        className="plannerModal__recurControl"
+                        type="date"
+                        value={repeatUntil}
+                        onChange={(e) => setRepeatUntil(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="plannerModal__recurNote">
+                      Repeats on the same weekday as the selected date.
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
+            <div className="plannerModal__field">
+              <label>Description</label>
+              <textarea placeholder="description..." value={desc} onChange={(e) => setDesc(e.target.value)} />
+            </div>
+
+            {formError && <div className="plannerModal__error">{formError}</div>}
+
             <div className="plannerModal__actions">
-              <button
-                className="plannerModal__save"
-                type="button"
-                onClick={handleSave}
-                disabled={savingEvent}>
+              <button className="plannerModal__save" type="button" onClick={handleSave} disabled={savingEvent}>
                 {savingEvent ? "saving..." : "save"}
               </button>
             </div>
@@ -1154,15 +906,9 @@ export default function Planner() {
       )}
 
       {focusOpen && (
-        <div
-          className="focusModal"
-          role="dialog"
-          aria-modal="true"
-          onClick={closeFocus}>
+        <div className="focusModal" role="dialog" aria-modal="true" onClick={closeFocus}>
           <div className="focusModal__backdrop" />
-          <div
-            className="focusModal__card"
-            onClick={(e) => e.stopPropagation()}>
+          <div className="focusModal__card" onClick={(e) => e.stopPropagation()}>
             <div className="focusModal__top">
               <button
                 type="button"
@@ -1178,11 +924,56 @@ export default function Planner() {
               </button>
             </div>
 
+            {/* New duration row (no overflow) */}
+            <div className="focusModal__durations">
+              <div className="focusModal__durRow">
+                <label className="focusModal__durLabel">
+                  <span className="focusModal__durText">Work</span>
+                  <input
+                    className="focusModal__durInput"
+                    type="number"
+                    min="1"
+                    value={workMinutes}
+                    disabled={isRunning}
+                    onChange={(e) => {
+                      const v = Math.max(1, Number(e.target.value) || 1);
+                      setWorkMinutes(v);
+                      if (focusMode === "work" && !isRunning) {
+                        const d = v * 60;
+                        setDurationSec(d);
+                        setRemainingSec(d);
+                      }
+                    }}
+                  />
+                  <span className="focusModal__durText">min</span>
+                </label>
+
+                <label className="focusModal__durLabel">
+                  <span className="focusModal__durText">Break</span>
+                  <input
+                    className="focusModal__durInput"
+                    type="number"
+                    min="1"
+                    value={breakMinutes}
+                    disabled={isRunning}
+                    onChange={(e) => {
+                      const v = Math.max(1, Number(e.target.value) || 1);
+                      setBreakMinutes(v);
+                      if (focusMode === "break" && !isRunning) {
+                        const d = v * 60;
+                        setDurationSec(d);
+                        setRemainingSec(d);
+                      }
+                    }}
+                  />
+                  <span className="focusModal__durText">min</span>
+                </label>
+              </div>
+            </div>
+
             <div className="focusModal__circleWrap">
               <div className="focusModal__circle">
-                <div className="focusModal__time">
-                  {formatMMSS(remainingSec)}
-                </div>
+                <div className="focusModal__time">{formatMMSS(remainingSec)}</div>
               </div>
             </div>
 
@@ -1190,16 +981,11 @@ export default function Planner() {
               <button
                 type="button"
                 className="focusModal__btn"
-                onClick={() =>
-                  isRunning ? setIsRunning(false) : startTimer()
-                }>
+                onClick={() => (isRunning ? setIsRunning(false) : startTimer())}>
                 {isRunning ? "PAUSE" : "START"}
               </button>
 
-              <button
-                type="button"
-                className="focusModal__btn"
-                onClick={endTimer}>
+              <button type="button" className="focusModal__btn" onClick={endTimer}>
                 END
               </button>
             </div>

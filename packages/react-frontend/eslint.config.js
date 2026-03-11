@@ -5,9 +5,11 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
-  globalIgnores(["dist"]),
+  globalIgnores(["dist", "coverage"]),
+
   {
     files: ["**/*.{js,jsx}"],
+    ignores: ["coverage/**"],
     extends: [
       js.configs.recommended,
       reactHooks.configs.flat.recommended,
@@ -23,10 +25,26 @@ export default defineConfig([
       }
     },
     rules: {
-      "no-unused-vars": [
-        "error",
-        { varsIgnorePattern: "^[A-Z_]" }
-      ]
+      "no-unused-vars": ["error", { varsIgnorePattern: "^[A-Z_]" }]
+    }
+  },
+
+  {
+    files: ["**/*.{test,spec}.{js,jsx}", "src/setupTests.{js,jsx}"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        jest: "readonly",
+        describe: "readonly",
+        test: "readonly",
+        it: "readonly",
+        expect: "readonly",
+        beforeEach: "readonly",
+        afterEach: "readonly",
+        beforeAll: "readonly",
+        afterAll: "readonly"
+      }
     }
   }
 ]);
