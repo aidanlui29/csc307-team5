@@ -348,12 +348,14 @@
   background: #ff2e2e;
   color: white;
 }
+
+/* ---------- CLOCKIN NOTIFICATION TOAST ---------- */
 .clockinToast {
   position: fixed;
   top: 28px;
   right: 28px;
   width: 560px;
-  background: #fff;
+  background: #ffffff;
   border-radius: 28px;
   padding: 34px 34px 34px 120px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
@@ -369,7 +371,7 @@
   border-radius: 999px;
   border: 0;
   background: #d9d9d9;
-  font-size: 34px;
+  font-size: 28px;
   line-height: 56px;
   cursor: pointer;
 }

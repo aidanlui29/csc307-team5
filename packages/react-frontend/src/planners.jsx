@@ -1,4 +1,3 @@
-// packages/react-frontend/src/Planners.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authHeaders } from "./auth";
@@ -87,10 +86,13 @@ export default function Planners() {
 
   // server events for overview panels
   const [eventsByPlanner, setEventsByPlanner] = useState({}); // { [plannerId]: Event[] }
+
+  // ---------- CLOCKIN NOTIFICATION TOAST (CLIENT-SIDE) ----------
+  // Shows a banner when a task/schedule starts (based on events we already fetch).
   const [clockInNotification, setClockInNotification] =
     useState(null);
-  const [dismissedEvents, setDismissedEvents] = useState(
-    new Set()
+  const [dismissedEventIds, setDismissedEventIds] = useState(
+    () => new Set()
   );
 
   const todayStr = useMemo(
@@ -335,6 +337,32 @@ export default function Planners() {
     return out;
   }, [planners, eventsByPlanner]);
 
+  // Check for events that just started and show a toast.
+  useEffect(() => {
+    if (!allEvents || allEvents.length === 0) return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+
+      const justStarted = allEvents.find((ev) => {
+        if (!ev?.id) return false;
+        if (dismissedEventIds.has(ev.id)) return false;
+
+        const start = new Date(`${ev.date}T00:00:00`);
+        const startMin = ev.startMin ?? 0;
+        start.setMinutes(start.getMinutes() + startMin);
+
+        const diffMs = now - start;
+        // Trigger if event started within the last 60 seconds
+        return diffMs >= 0 && diffMs <= 60_000;
+      });
+
+      if (justStarted) setClockInNotification(justStarted);
+    }, 15_000);
+
+    return () => clearInterval(interval);
+  }, [allEvents, dismissedEventIds]);
+
   const todaysTasks = useMemo(() => {
     const priorityWeight = { high: 0, medium: 1, low: 2 };
 
@@ -400,35 +428,6 @@ export default function Planners() {
     return items;
   }, [allEvents, todayStr]);
 
-  useEffect(() => {
-    if (!events || events.length === 0) return;
-
-    const interval = setInterval(() => {
-      const now = new Date();
-
-      events.forEach((event) => {
-        if (dismissedEvents.has(event._id)) return;
-
-        const eventStart = new Date(event.date);
-        const [startHour, startMinute] = [
-          Math.floor(event.startMin / 60),
-          event.startMin % 60
-        ];
-
-        eventStart.setHours(startHour, startMinute, 0);
-
-        const diff = now - eventStart;
-
-        // Trigger if event started within last 60 seconds
-        if (diff >= 0 && diff <= 60000) {
-          setClockInNotification(event);
-        }
-      });
-    }, 15000);
-
-    return () => clearInterval(interval);
-  }, [events, dismissedEvents]);
-
   return (
     <div className="plannersPage">
       {clockInNotification && (
@@ -448,7 +447,7 @@ export default function Planners() {
               });
               setClockInNotification(null);
             }}>
-            ×
+            ✕
           </button>
 
           <div className="clockinToastIcon" aria-hidden="true">
