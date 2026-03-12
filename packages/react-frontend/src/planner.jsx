@@ -1,9 +1,8 @@
-// packages/react-frontend/src/Planner.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { authHeaders } from "./auth";
 import "./planner.css";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Clock, X } from "lucide-react";
 
 /* ---------- date helpers ---------- */
 function startOfWeek(date) {
@@ -67,6 +66,15 @@ function minutesToTime(mins) {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return `${pad2(h)}:${pad2(m)}`;
+}
+
+function minutesToLabel(mins) {
+  const total = Number(mins ?? 0);
+  const h24 = Math.floor(total / 60);
+  const m = total % 60;
+  const ampm = h24 < 12 ? "am" : "pm";
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${h12}:${pad2(m)}${ampm}`;
 }
 
 // legacy localStorage key (migration only)
@@ -149,6 +157,12 @@ export default function Planner() {
   const [events, setEvents] = useState([]);
   const [pageError, setPageError] = useState("");
   const [loadingEvents, setLoadingEvents] = useState(true);
+
+  // ---- ClockIn toast notification (Planner page only)
+  const [clockInEvent, setClockInEvent] = useState(null);
+  const [dismissedClockInIds, setDismissedClockInIds] =
+    useState(() => new Set());
+  const [shownClockInId, setShownClockInId] = useState(null);
 
   // ---- load events from API + one-time migration from localStorage
   useEffect(() => {
@@ -456,6 +470,73 @@ export default function Planner() {
       nowIntervalRef.current = null;
     };
   }, []);
+
+  /* ---------- CLOCKIN TOAST LOGIC ---------- */
+  useEffect(() => {
+    if (!events || events.length === 0) {
+      setClockInEvent(null);
+      return;
+    }
+
+    const nowMs = now.getTime();
+
+    const startDateTime = (ev) => {
+      const base = new Date(`${ev.date}T00:00:00`);
+      const startMin = Number(ev.startMin ?? 0);
+      base.setMinutes(base.getMinutes() + startMin);
+      return base;
+    };
+
+    const endDateTime = (ev) => {
+      const base = new Date(`${ev.date}T00:00:00`);
+      const endMin = Number(ev.endMin ?? ev.startMin ?? 0);
+      base.setMinutes(base.getMinutes() + endMin);
+      return base;
+    };
+
+    const upcoming = events
+      .filter((ev) => ev?.id && !dismissedClockInIds.has(ev.id))
+      .map((ev) => ({ ev, start: startDateTime(ev) }))
+      .filter(({ start }) => start.getTime() >= nowMs)
+      .sort((a, b) => a.start.getTime() - b.start.getTime());
+
+    const next = upcoming[0]?.ev ?? null;
+    if (!next) {
+      setClockInEvent(null);
+      return;
+    }
+
+    const nextStart = startDateTime(next).getTime();
+    const diffMin = (nextStart - nowMs) / 60000;
+
+    // Show ONLY if the next event starts within the next 30 minutes.
+    // Only pop for that next event (don't auto-cycle to later ones).
+    if (diffMin >= 0 && diffMin <= 30) {
+      if (
+        shownClockInId === next.id ||
+        clockInEvent?.id === next.id
+      ) {
+        if (clockInEvent?.id !== next.id) setClockInEvent(next);
+        return;
+      }
+
+      setClockInEvent(next);
+      setShownClockInId(next.id);
+      return;
+    }
+
+    // If a toast is open but the event ended, clear it.
+    if (clockInEvent) {
+      const endMs = endDateTime(clockInEvent).getTime();
+      if (nowMs > endMs) setClockInEvent(null);
+    }
+  }, [
+    events,
+    now,
+    dismissedClockInIds,
+    shownClockInId,
+    clockInEvent
+  ]);
 
   const [nowLineStyle, setNowLineStyle] = useState(null);
 
@@ -1080,6 +1161,50 @@ export default function Planner() {
           </button>
         </div>
       </div>
+
+      {clockInEvent && (
+        <div
+          className="plannerToast"
+          role="status"
+          aria-live="polite"
+          onClick={(e) => e.stopPropagation()}>
+          <button
+            className="plannerToast__close"
+            type="button"
+            aria-label="Dismiss notification"
+            onClick={() => {
+              setDismissedClockInIds((prev) => {
+                const next = new Set(prev);
+                next.add(clockInEvent.id);
+                return next;
+              });
+              setClockInEvent(null);
+            }}>
+            <X size={18} />
+          </button>
+
+          <div
+            className="plannerToast__icon"
+            aria-hidden="true">
+            <Clock size={22} />
+          </div>
+
+          <div className="plannerToast__body">
+            <div className="plannerToast__title">
+              Hello! It is time to ClockIn!
+            </div>
+            <div className="plannerToast__msg">
+              You have{" "}
+              {clockInEvent.kind === "task"
+                ? "Task"
+                : "Schedule"}{" "}
+              - {clockInEvent.title} from{" "}
+              {minutesToLabel(clockInEvent.startMin)} -{" "}
+              {minutesToLabel(clockInEvent.endMin)}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div
         className="planner__scrollArea"
