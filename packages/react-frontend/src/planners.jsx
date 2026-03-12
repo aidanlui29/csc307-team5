@@ -337,28 +337,58 @@ export default function Planners() {
     return out;
   }, [planners, eventsByPlanner]);
 
-  // Check for events that just started and show a toast.
+  // Check for events that are starting now (or very soon) and show a toast.
+  // We do this entirely on the client using the events we already fetch.
   useEffect(() => {
     if (!allEvents || allEvents.length === 0) return;
 
-    const interval = setInterval(() => {
+    // Show when an event is about to start (next 60 minutes) OR just started (last 10 minutes).
+    // Wider window makes it easier to see/test without waiting for the exact minute.
+    const UPCOMING_WINDOW_MS = 60 * 60 * 1000;
+    const RECENT_WINDOW_MS = 10 * 60 * 1000;
+
+    const check = () => {
       const now = new Date();
 
-      const justStarted = allEvents.find((ev) => {
-        if (!ev?.id) return false;
-        if (dismissedEventIds.has(ev.id)) return false;
+      // Choose the closest qualifying event (soonest start time).
+      const candidate = allEvents
+        .filter((ev) => {
+          if (!ev?.id) return false;
+          if (dismissedEventIds.has(ev.id)) return false;
 
-        const start = new Date(`${ev.date}T00:00:00`);
-        const startMin = ev.startMin ?? 0;
-        start.setMinutes(start.getMinutes() + startMin);
+          const start = new Date(`${ev.date}T00:00:00`);
+          const startMin = ev.startMin ?? 0;
+          start.setMinutes(start.getMinutes() + startMin);
 
-        const diffMs = now - start;
-        // Trigger if event started within the last 60 seconds
-        return diffMs >= 0 && diffMs <= 60_000;
-      });
+          const diffMs = start - now; // positive if in the future
+          const startedMsAgo = now - start; // positive if in the past
 
-      if (justStarted) setClockInNotification(justStarted);
-    }, 15_000);
+          const isUpcoming =
+            diffMs >= 0 && diffMs <= UPCOMING_WINDOW_MS;
+          const isRecent =
+            startedMsAgo >= 0 &&
+            startedMsAgo <= RECENT_WINDOW_MS;
+
+          return isUpcoming || isRecent;
+        })
+        .sort((a, b) => {
+          const aStart = new Date(`${a.date}T00:00:00`);
+          aStart.setMinutes(
+            aStart.getMinutes() + (a.startMin ?? 0)
+          );
+          const bStart = new Date(`${b.date}T00:00:00`);
+          bStart.setMinutes(
+            bStart.getMinutes() + (b.startMin ?? 0)
+          );
+          return aStart - bStart;
+        })[0];
+
+      if (candidate) setClockInNotification(candidate);
+    };
+
+    // Run immediately after events load so you don't have to wait for the first interval.
+    check();
+    const interval = setInterval(check, 15_000);
 
     return () => clearInterval(interval);
   }, [allEvents, dismissedEventIds]);
@@ -467,6 +497,9 @@ export default function Planners() {
               {minutesToLabel(
                 clockInNotification.startMin ?? 0
               )}
+              {clockInNotification.endMin != null
+                ? ` - ${minutesToLabel(clockInNotification.endMin)}`
+                : ""}
             </div>
           </div>
         </div>
