@@ -348,3 +348,86 @@
   background: #ff2e2e;
   color: white;
 }
+.clockinToast {
+  position: fixed;
+  top: 28px;
+  right: 28px;
+  width: 560px;
+  background: #fff;
+  border-radius: 28px;
+  padding: 34px 34px 34px 120px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  z-index: 9999;
+}
+
+.clockinToastClose {
+  position: absolute;
+  top: -18px;
+  left: -18px;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  border: 0;
+  background: #d9d9d9;
+  font-size: 34px;
+  line-height: 56px;
+  cursor: pointer;
+}
+
+.clockinToastClose:hover {
+  background: #c6c6c6;
+}
+
+.clockinToastIcon {
+  position: absolute;
+  left: 34px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 74px;
+  height: 74px;
+  display: grid;
+  place-items: center;
+}
+
+.clockinToastClock {
+  width: 74px;
+  height: 74px;
+  border: 6px solid #111;
+  border-radius: 999px;
+  position: relative;
+}
+
+.clockinToastClock::before {
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 26px;
+  background: #111;
+  left: 50%;
+  top: 18px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+}
+
+.clockinToastClock::after {
+  content: "";
+  position: absolute;
+  width: 24px;
+  height: 5px;
+  background: #111;
+  left: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 999px;
+}
+
+.clockinToastTitle {
+  font-size: 34px;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+.clockinToastMsg {
+  font-size: 28px;
+  line-height: 1.25;
+}
