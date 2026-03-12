@@ -8,7 +8,5 @@ module.exports = {
     "^.+\\.(js|jsx)$": "babel-jest"
   },
   testMatch: ["**/?(*.)+(test).jsx"],
-  collectCoverageFrom: [
-    "src/**/Login.jsx"
-  ]
+  collectCoverageFrom: ["src/**/Login.jsx"]
 };
