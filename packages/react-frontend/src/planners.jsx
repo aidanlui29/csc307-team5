@@ -87,6 +87,11 @@ export default function Planners() {
 
   // server events for overview panels
   const [eventsByPlanner, setEventsByPlanner] = useState({}); // { [plannerId]: Event[] }
+  const [clockInNotification, setClockInNotification] =
+    useState(null);
+  const [dismissedEvents, setDismissedEvents] = useState(
+    new Set()
+  );
 
   const todayStr = useMemo(
     () => toDateInputValue(new Date()),
@@ -395,8 +400,78 @@ export default function Planners() {
     return items;
   }, [allEvents, todayStr]);
 
+  useEffect(() => {
+    if (!events || events.length === 0) return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+
+      events.forEach((event) => {
+        if (dismissedEvents.has(event._id)) return;
+
+        const eventStart = new Date(event.date);
+        const [startHour, startMinute] = [
+          Math.floor(event.startMin / 60),
+          event.startMin % 60
+        ];
+
+        eventStart.setHours(startHour, startMinute, 0);
+
+        const diff = now - eventStart;
+
+        // Trigger if event started within last 60 seconds
+        if (diff >= 0 && diff <= 60000) {
+          setClockInNotification(event);
+        }
+      });
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [events, dismissedEvents]);
+
   return (
     <div className="plannersPage">
+      {clockInNotification && (
+        <div
+          className="clockinToast"
+          role="status"
+          aria-live="polite">
+          <button
+            className="clockinToastClose"
+            type="button"
+            aria-label="Dismiss notification"
+            onClick={() => {
+              setDismissedEventIds((prev) => {
+                const next = new Set(prev);
+                next.add(clockInNotification.id);
+                return next;
+              });
+              setClockInNotification(null);
+            }}>
+            ×
+          </button>
+
+          <div className="clockinToastIcon" aria-hidden="true">
+            <div className="clockinToastClock" />
+          </div>
+
+          <div className="clockinToastBody">
+            <div className="clockinToastTitle">
+              Hello! It is time to ClockIn!
+            </div>
+            <div className="clockinToastMsg">
+              You have{" "}
+              {clockInNotification.kind === "task"
+                ? "Task"
+                : "Schedule"}{" "}
+              - {clockInNotification.title} from{" "}
+              {minutesToLabel(
+                clockInNotification.startMin ?? 0
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       <main className="plannersMain">
         {/* LEFT SIDE */}
         <section className="tilesArea">
