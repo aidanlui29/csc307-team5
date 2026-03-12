@@ -337,59 +337,52 @@ export default function Planners() {
     return out;
   }, [planners, eventsByPlanner]);
 
-  // Check for events that are starting now (or very soon) and show a toast.
-  // We do this entirely on the client using the events we already fetch.
+  // ClockIn notification!
   useEffect(() => {
     if (!allEvents || allEvents.length === 0) return;
 
-    // Show when an event is about to start (next 60 minutes) OR just started (last 10 minutes).
-    // Wider window makes it easier to see/test without waiting for the exact minute.
-    const UPCOMING_WINDOW_MS = 60 * 60 * 1000;
-    const RECENT_WINDOW_MS = 10 * 60 * 1000;
-
-    const check = () => {
-      const now = new Date();
-
-      // Choose the closest qualifying event (soonest start time).
-      const candidate = allEvents
-        .filter((ev) => {
-          if (!ev?.id) return false;
-          if (dismissedEventIds.has(ev.id)) return false;
-
-          const start = new Date(`${ev.date}T00:00:00`);
-          const startMin = ev.startMin ?? 0;
-          start.setMinutes(start.getMinutes() + startMin);
-
-          const diffMs = start - now; // positive if in the future
-          const startedMsAgo = now - start; // positive if in the past
-
-          const isUpcoming =
-            diffMs >= 0 && diffMs <= UPCOMING_WINDOW_MS;
-          const isRecent =
-            startedMsAgo >= 0 &&
-            startedMsAgo <= RECENT_WINDOW_MS;
-
-          return isUpcoming || isRecent;
-        })
-        .sort((a, b) => {
-          const aStart = new Date(`${a.date}T00:00:00`);
-          aStart.setMinutes(
-            aStart.getMinutes() + (a.startMin ?? 0)
-          );
-          const bStart = new Date(`${b.date}T00:00:00`);
-          bStart.setMinutes(
-            bStart.getMinutes() + (b.startMin ?? 0)
-          );
-          return aStart - bStart;
-        })[0];
-
-      if (candidate) setClockInNotification(candidate);
+    const getStartDateTime = (ev) => {
+      // date is "YYYY-MM-DD" and startMin is minutes from midnight
+      const base = new Date(`${ev.date}T00:00:00`);
+      const mins = ev.startMin ?? 0;
+      base.setMinutes(base.getMinutes() + mins);
+      return base;
     };
 
-    // Run immediately after events load so you don't have to wait for the first interval.
-    check();
-    const interval = setInterval(check, 15_000);
+    const pickNextEvent = () => {
+      const now = new Date();
 
+      // Filter out dismissed events
+      const candidates = allEvents
+        .filter((ev) => ev?.id && !dismissedEventIds.has(ev.id))
+        // OPTIONAL: ignore completed tasks if you want
+        // .filter((ev) => !(ev.kind === "task" && ev.completed))
+        .map((ev) => ({ ev, start: getStartDateTime(ev) }))
+        // only keep events that are not too far in the past
+        .filter(
+          ({ start }) =>
+            start.getTime() >= now.getTime() - 10 * 60 * 1000
+        )
+        .sort((a, b) => a.start - b.start);
+
+      return candidates[0]?.ev ?? null;
+    };
+
+    const check = () => {
+      const next = pickNextEvent();
+
+      // Debug to verify it is selecting something:
+      // console.log("ClockIn next:", next);
+
+      if (next) setClockInNotification(next);
+      else setClockInNotification(null);
+    };
+
+    // Run immediately (important)
+    check();
+
+    // Then keep checking in case schedule changes
+    const interval = setInterval(check, 15_000);
     return () => clearInterval(interval);
   }, [allEvents, dismissedEventIds]);
 
