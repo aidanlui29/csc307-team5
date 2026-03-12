@@ -338,7 +338,6 @@ export default function Planners() {
         (e) =>
           e.kind === "task" &&
           e.date === todayStr &&
-          // remove from Today's Tasks if completed is true
           !e.completed
       )
       .map((e) => ({
@@ -354,7 +353,6 @@ export default function Planners() {
         startMin: e.startMin ?? 0
       }));
 
-    // sort by priority first, then time
     items.sort((a, b) => {
       const pa = priorityWeight[a.priority] ?? 99;
       const pb = priorityWeight[b.priority] ?? 99;
@@ -538,22 +536,25 @@ export default function Planners() {
           <div
             className="plannerModal__card"
             onClick={(e) => e.stopPropagation()}>
-            <div className="plannerModal__topRow">
-              <input
-                className="plannerModal__title"
-                placeholder="planner name"
-                value={plannerName}
-                onChange={(e) => setPlannerName(e.target.value)}
-              />
+            <div style={{ height: 34 }} aria-hidden="true" />
 
-              <button
-                className="plannerModal__close plannerModal__close--topRow"
-                onClick={closeModal} // <-- use your existing close function name
-                aria-label="Close"
-                type="button">
-                ✕
-              </button>
-            </div>
+            {/* ✅ Match the task modal close button */}
+            <button
+              className="plannerModal__close"
+              onClick={closeModal}
+              aria-label="Close"
+              type="button"
+              style={{ top: 18, right: 22 }}>
+              ✕
+            </button>
+
+            <input
+              className="plannerModal__title"
+              placeholder="planner name"
+              value={plannerName}
+              onChange={(e) => setPlannerName(e.target.value)}
+            />
+
             <div className="plannerModal__field">
               <label>Color</label>
               <div className="colorRowSimple">

@@ -20,13 +20,43 @@ const EventSchema = new mongoose.Schema(
       enum: ["task", "schedule"],
       required: true
     },
+
     date: { type: String, required: true }, // "YYYY-MM-DD"
     title: { type: String, required: true, trim: true },
     desc: { type: String, default: "" },
     startMin: { type: Number, required: true },
     endMin: { type: Number, required: true },
 
-    // NEW: task-only semantics (still stored on all docs for simplicity)
+    // optional color chosen in UI (hex)
+    color: { type: String, default: null },
+
+    // group id for recurring set
+    seriesId: { type: String, default: null },
+
+    // ✅ UPDATED: unified recurrence (no mode)
+    recurrence: {
+      type: {
+        everyWeeks: {
+          type: Number,
+          enum: [1, 2]
+        },
+        days: {
+          type: [Boolean],
+          validate: {
+            validator: function (arr) {
+              return Array.isArray(arr) && arr.length === 7;
+            },
+            message: "days must be an array of 7 booleans"
+          }
+        },
+        until: {
+          type: String // "YYYY-MM-DD"
+        }
+      },
+      default: null
+    },
+
+    // task-only semantics (still stored on all docs)
     priority: {
       type: String,
       enum: ["low", "medium", "high"],

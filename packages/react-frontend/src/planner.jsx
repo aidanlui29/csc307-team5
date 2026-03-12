@@ -1,11 +1,7 @@
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState
-} from "react";
+// packages/react-frontend/src/Planner.jsx
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { authHeaders } from "./auth.jsx";
+import { authHeaders } from "./auth";
 import "./planner.css";
 import { Pencil, Trash2 } from "lucide-react";
 
@@ -78,6 +74,59 @@ function storageKey(id) {
   return `plannerEvents_v1_${id || "default"}`;
 }
 
+// normalize event object coming from backend (id vs _id, etc.)
+function normalizeEvent(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const id = raw.id ?? raw._id ?? raw.eventId ?? raw._eventId;
+  if (!id) return { ...raw, id: undefined };
+  return { ...raw, id };
+}
+
+// subtle color
+function hexToRgba(hex, alpha) {
+  if (typeof hex !== "string") return null;
+  const h = hex.trim().replace("#", "");
+  if (![3, 6].includes(h.length)) return null;
+
+  const full =
+    h.length === 3
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : h;
+  const r = Number.parseInt(full.slice(0, 2), 16);
+  const g = Number.parseInt(full.slice(2, 4), 16);
+  const b = Number.parseInt(full.slice(4, 6), 16);
+  if ([r, g, b].some((v) => Number.isNaN(v))) return null;
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+// stable-ish series id generator (no deps)
+function makeSeriesId() {
+  return `series_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+
+const DEFAULT_COLOR_SCHEDULE = "#22c55e"; // green
+const DEFAULT_COLOR_TASK = "#7c3aed"; // purple
+
+// same circle/swatch style as Planners.jsx (more options)
+const EVENT_COLOR_OPTIONS = [
+  "#22c55e",
+  "#7c3aed",
+  "#3b82f6",
+  "#06b6d4",
+  "#f97316",
+  "#ef4444",
+  "#eab308",
+  "#8b5cf6",
+  "#14b8a6",
+  "#ec4899",
+  "#64748b",
+  "#9ca3af"
+];
+
 export default function Planner() {
   const { id } = useParams(); // plannerId
   const navigate = useNavigate();
@@ -126,7 +175,10 @@ export default function Planner() {
         }
 
         const data = await res.json();
-        const serverEvents = Array.isArray(data) ? data : [];
+        const serverEvents = (Array.isArray(data) ? data : [])
+          .map(normalizeEvent)
+          .filter(Boolean);
+
         if (!cancelled) setEvents(serverEvents);
 
         // ---- migrate legacy localStorage (only once per planner)
@@ -180,7 +232,8 @@ export default function Planner() {
                     startMin: ev.startMin,
                     endMin: ev.endMin,
                     priority,
-                    completed
+                    completed,
+                    color: ev.color || null
                   })
                 }
               );
@@ -200,8 +253,12 @@ export default function Planner() {
             );
             if (res2.ok) {
               const data2 = await res2.json();
-              if (!cancelled)
-                setEvents(Array.isArray(data2) ? data2 : []);
+              const normalized = (
+                Array.isArray(data2) ? data2 : []
+              )
+                .map(normalizeEvent)
+                .filter(Boolean);
+              if (!cancelled) setEvents(normalized);
             }
           }
 
@@ -228,11 +285,11 @@ export default function Planner() {
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusMode, setFocusMode] = useState("work");
 
-  // defaults (minutes)
   const [workMinutes, setWorkMinutes] = useState(25);
   const [breakMinutes, setBreakMinutes] = useState(5);
 
-  const [_durationSec, setDurationSec] = useState(25 * 60);
+  // ✅ no-unused-vars: we only need the setter
+  const [, setDurationSec] = useState(25 * 60);
   const [remainingSec, setRemainingSec] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef(null);
@@ -323,6 +380,9 @@ export default function Planner() {
   const [priority, setPriority] = useState("medium");
   const [completed, setCompleted] = useState(false);
 
+  // color
+  const [color, setColor] = useState(DEFAULT_COLOR_SCHEDULE);
+
   const today = now;
   const todayIndex = today.getDay();
 
@@ -375,7 +435,9 @@ export default function Planner() {
       window.removeEventListener("resize", computeLayout);
   }, []);
 
-  const [nowLineStyle, setNowLineStyle] = useState(null);
+  // ✅ no window globals
+  const nowIntervalRef = useRef(null);
+
   useEffect(() => {
     const tick = () => setNow(new Date());
     const msToNextMinute =
@@ -384,17 +446,18 @@ export default function Planner() {
 
     const t = setTimeout(() => {
       tick();
-      const id2 = setInterval(tick, 60 * 1000);
-      window.__plannerNowInterval = id2;
+      nowIntervalRef.current = setInterval(tick, 60 * 1000);
     }, msToNextMinute);
 
     return () => {
       clearTimeout(t);
-      if (window.__plannerNowInterval)
-        clearInterval(window.__plannerNowInterval);
-      window.__plannerNowInterval = null;
+      if (nowIntervalRef.current)
+        clearInterval(nowIntervalRef.current);
+      nowIntervalRef.current = null;
     };
   }, []);
+
+  const [nowLineStyle, setNowLineStyle] = useState(null);
 
   useEffect(() => {
     if (!gridRef.current || !layout) return;
@@ -449,12 +512,60 @@ export default function Planner() {
   const [endTime, setEndTime] = useState("10:00");
   const [desc, setDesc] = useState("");
 
-  // recurrence
+  // recurrence (single unified mode: days + everyWeeks + until)
   const [repeatEnabled, setRepeatEnabled] = useState(false);
   const [repeatEveryWeeks, setRepeatEveryWeeks] = useState(2);
   const [repeatUntil, setRepeatUntil] = useState(() =>
     toDateInputValue(new Date())
   );
+  const [repeatDays, setRepeatDays] = useState(() => {
+    const d = new Date();
+    const init = Array(7).fill(false);
+    init[d.getDay()] = true;
+    return init;
+  });
+
+  const [seriesId, setSeriesId] = useState(null);
+
+  function setRepeatDaysDefaultForDate(dateISO) {
+    const d = new Date(`${dateISO}T00:00:00`);
+    const idx = Number.isNaN(d.getTime())
+      ? new Date().getDay()
+      : d.getDay();
+    const arr = Array(7).fill(false);
+    arr[idx] = true;
+    setRepeatDays(arr);
+  }
+
+  function applyRecurrenceFromEvent(ev) {
+    const rec = ev?.recurrence;
+    if (!rec || typeof rec !== "object") {
+      setRepeatEnabled(false);
+      setRepeatEveryWeeks(2);
+      setRepeatUntil(ev?.date || toDateInputValue(new Date()));
+      setRepeatDaysDefaultForDate(
+        ev?.date || toDateInputValue(new Date())
+      );
+      setSeriesId(null);
+      return;
+    }
+
+    setRepeatEnabled(true);
+
+    // clamp to 1/2 because UI only offers those
+    const ew = Number(rec.everyWeeks);
+    setRepeatEveryWeeks(ew === 1 ? 1 : 2);
+
+    setRepeatUntil(rec.until || ev.date);
+
+    if (Array.isArray(rec.days) && rec.days.length === 7) {
+      setRepeatDays(rec.days.map(Boolean));
+    } else {
+      setRepeatDaysDefaultForDate(ev.date);
+    }
+
+    setSeriesId(ev.seriesId || null);
+  }
 
   function openAddNew() {
     setSelectedEventId(null);
@@ -463,16 +574,22 @@ export default function Planner() {
     setTitle("");
     setDesc("");
     setKind("schedule");
-    setDateStr(toDateInputValue(new Date()));
+
+    const todayStr = toDateInputValue(new Date());
+    setDateStr(todayStr);
     setStartTime("09:00");
     setEndTime("10:00");
 
     setRepeatEnabled(false);
     setRepeatEveryWeeks(2);
-    setRepeatUntil(toDateInputValue(new Date()));
+    setRepeatUntil(todayStr);
+    setRepeatDaysDefaultForDate(todayStr);
+    setSeriesId(null);
 
     setPriority("medium");
     setCompleted(false);
+
+    setColor(DEFAULT_COLOR_SCHEDULE);
 
     setAddOpen(true);
   }
@@ -491,10 +608,14 @@ export default function Planner() {
     setPriority(ev.priority || "medium");
     setCompleted(Boolean(ev.completed));
 
-    // recurrence not used in edit
-    setRepeatEnabled(false);
-    setRepeatEveryWeeks(2);
-    setRepeatUntil(ev.date);
+    setColor(
+      ev.color ||
+        (ev.kind === "task"
+          ? DEFAULT_COLOR_TASK
+          : DEFAULT_COLOR_SCHEDULE)
+    );
+
+    applyRecurrenceFromEvent(ev);
 
     setAddOpen(true);
   }
@@ -504,6 +625,139 @@ export default function Planner() {
     setAddOpen(false);
     setFormError("");
     setEditingId(null);
+  }
+
+  // ✅ FIX: always snap to default on kind switch
+  function setKindToSchedule() {
+    setKind("schedule");
+    setColor(DEFAULT_COLOR_SCHEDULE);
+  }
+
+  // ✅ FIX: always snap to default on kind switch
+  function setKindToTask() {
+    setKind("task");
+    setColor(DEFAULT_COLOR_TASK);
+  }
+
+  async function postOneEvent(payloadForDate) {
+    const res = await fetch(`/api/planners/${id}/events`, {
+      method: "POST",
+      headers: {
+        ...authHeaders(),
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payloadForDate)
+    });
+
+    if (res.status === 401) {
+      navigate("/login");
+      return { ok: false, unauth: true };
+    }
+    if (!res.ok) {
+      return {
+        ok: false,
+        message:
+          (await res.text()) ||
+          "Failed to create recurring event"
+      };
+    }
+    return { ok: true };
+  }
+
+  async function refetchEventsAndShowWeek(dateISO) {
+    try {
+      const res = await fetch(`/api/planners/${id}/events`, {
+        headers: authHeaders()
+      });
+      if (res.status === 401) return navigate("/login");
+      if (res.ok) {
+        const data = await res.json();
+        const normalized = (Array.isArray(data) ? data : [])
+          .map(normalizeEvent)
+          .filter(Boolean);
+        setEvents(normalized);
+      }
+    } catch {
+      // ignore
+    }
+
+    if (dateISO) {
+      const d = new Date(`${dateISO}T00:00:00`);
+      if (!Number.isNaN(d.getTime())) setAnchorDate(d);
+    }
+  }
+
+  // unified recurrence generator: selected weekdays + everyWeeks (1 or 2) + until
+  async function createOccurrencesFrom(
+    basePayload,
+    startDateISO,
+    untilISO,
+    opts
+  ) {
+    const {
+      everyWeeks,
+      daysArray,
+      skipFirst,
+      seriesIdToUse,
+      recurrenceToUse
+    } = opts;
+
+    const startDate = new Date(`${startDateISO}T00:00:00`);
+    const untilDate = new Date(`${untilISO}T00:00:00`);
+
+    if (
+      Number.isNaN(startDate.getTime()) ||
+      Number.isNaN(untilDate.getTime())
+    )
+      throw new Error("Invalid recurrence dates.");
+    if (untilDate < startDate)
+      throw new Error(
+        "Recurrence end date must be on/after the start date."
+      );
+
+    const selectedDays = Array.isArray(daysArray)
+      ? daysArray
+      : Array(7).fill(false);
+    if (!selectedDays.some(Boolean))
+      throw new Error("Pick at least one day to repeat on.");
+
+    const interval = Math.max(1, Number(everyWeeks) || 1);
+
+    // Anchor week start to make "every other week" stable
+    const startWeek = startOfWeek(startDate);
+
+    let cursor = new Date(startDate);
+    while (cursor <= untilDate) {
+      const isFirst = sameDay(cursor, startDate);
+      const dayIdx = cursor.getDay();
+
+      const cursorWeek = startOfWeek(cursor);
+      const weeksDiff = Math.round(
+        (cursorWeek.getTime() - startWeek.getTime()) /
+          (7 * 24 * 60 * 60 * 1000)
+      );
+      const matchesInterval =
+        interval === 1 ? true : weeksDiff % interval === 0;
+
+      if (
+        matchesInterval &&
+        (!skipFirst || !isFirst) &&
+        selectedDays[dayIdx]
+      ) {
+        const payloadForDate = {
+          ...basePayload,
+          date: toDateInputValue(cursor),
+          seriesId: seriesIdToUse,
+          recurrence: recurrenceToUse
+        };
+
+        const result = await postOneEvent(payloadForDate);
+        if (result.unauth) return;
+        if (!result.ok) throw new Error(result.message);
+      }
+
+      cursor = addDays(cursor, 1);
+    }
   }
 
   async function handleSave() {
@@ -517,21 +771,42 @@ export default function Planner() {
     if (eMin <= sMin)
       return setFormError("End time must be after start time.");
 
+    const wantsRecurrence = repeatEnabled && repeatUntil;
+
+    if (wantsRecurrence && !repeatDays.some(Boolean)) {
+      return setFormError(
+        "Pick at least one day to repeat on."
+      );
+    }
+
     setSavingEvent(true);
     try {
-      const payload = {
+      const basePayload = {
         title: title.trim(),
         kind,
         date: dateStr,
         startMin: sMin,
         endMin: eMin,
-        desc: desc.trim()
+        desc: desc.trim(),
+        color: color || null
       };
 
       if (kind === "task") {
-        payload.priority = priority;
-        payload.completed = completed;
+        basePayload.priority = priority;
+        basePayload.completed = completed;
       }
+
+      const seriesIdToUse = wantsRecurrence
+        ? seriesId || makeSeriesId()
+        : null;
+
+      const recurrenceToUse = wantsRecurrence
+        ? {
+            everyWeeks: repeatEveryWeeks,
+            days: repeatDays,
+            until: repeatUntil
+          }
+        : null;
 
       if (editingId) {
         const res = await fetch(`/api/events/${editingId}`, {
@@ -540,7 +815,15 @@ export default function Planner() {
             ...authHeaders(),
             "Content-Type": "application/json"
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+            ...basePayload,
+            ...(wantsRecurrence
+              ? {
+                  seriesId: seriesIdToUse,
+                  recurrence: recurrenceToUse
+                }
+              : { seriesId: null, recurrence: null })
+          })
         });
 
         if (res.status === 401) return navigate("/login");
@@ -549,62 +832,49 @@ export default function Planner() {
             (await res.text()) || "Failed to update event"
           );
 
-        const updated = await res.json();
+        const updatedRaw = await res.json();
+        const updated =
+          normalizeEvent(updatedRaw) || updatedRaw;
+
         setEvents((prev) =>
           prev.map((e) => (e.id === updated.id ? updated : e))
         );
+
+        if (wantsRecurrence) {
+          await createOccurrencesFrom(
+            basePayload,
+            dateStr,
+            repeatUntil,
+            {
+              everyWeeks: repeatEveryWeeks,
+              daysArray: repeatDays,
+              skipFirst: true,
+              seriesIdToUse,
+              recurrenceToUse
+            }
+          );
+          setSeriesId(seriesIdToUse);
+          await refetchEventsAndShowWeek(dateStr);
+        } else {
+          setSeriesId(null);
+          setAnchorDate(new Date(`${dateStr}T00:00:00`));
+        }
       } else {
-        const isRecurring =
-          kind === "schedule" && repeatEnabled && repeatUntil;
-
-        if (isRecurring) {
-          const startDate = new Date(`${dateStr}T00:00:00`);
-          const untilDate = new Date(`${repeatUntil}T00:00:00`);
-
-          if (
-            Number.isNaN(startDate.getTime()) ||
-            Number.isNaN(untilDate.getTime())
-          )
-            throw new Error("Invalid recurrence dates.");
-
-          if (untilDate < startDate)
-            throw new Error(
-              "Recurrence end date must be on/after the start date."
-            );
-
-          const createdEvents = [];
-          let cursor = new Date(startDate);
-
-          while (cursor <= untilDate) {
-            const payloadForDate = {
-              ...payload,
-              date: toDateInputValue(cursor)
-            };
-
-            const res = await fetch(
-              `/api/planners/${id}/events`,
-              {
-                method: "POST",
-                headers: {
-                  ...authHeaders(),
-                  "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payloadForDate)
-              }
-            );
-
-            if (res.status === 401) return navigate("/login");
-            if (!res.ok)
-              throw new Error(
-                (await res.text()) ||
-                  "Failed to create recurring event"
-              );
-
-            createdEvents.push(await res.json());
-            cursor = addWeeks(cursor, repeatEveryWeeks);
-          }
-
-          setEvents((prev) => [...prev, ...createdEvents]);
+        if (wantsRecurrence) {
+          await createOccurrencesFrom(
+            basePayload,
+            dateStr,
+            repeatUntil,
+            {
+              everyWeeks: repeatEveryWeeks,
+              daysArray: repeatDays,
+              skipFirst: false,
+              seriesIdToUse,
+              recurrenceToUse
+            }
+          );
+          setSeriesId(seriesIdToUse);
+          await refetchEventsAndShowWeek(dateStr);
         } else {
           const res = await fetch(
             `/api/planners/${id}/events`,
@@ -614,7 +884,7 @@ export default function Planner() {
                 ...authHeaders(),
                 "Content-Type": "application/json"
               },
-              body: JSON.stringify(payload)
+              body: JSON.stringify(basePayload)
             }
           );
 
@@ -624,8 +894,12 @@ export default function Planner() {
               (await res.text()) || "Failed to create event"
             );
 
-          const created = await res.json();
+          const createdRaw = await res.json();
+          const created =
+            normalizeEvent(createdRaw) || createdRaw;
+
           setEvents((prev) => [...prev, created]);
+          setAnchorDate(new Date(`${dateStr}T00:00:00`));
         }
       }
 
@@ -687,12 +961,23 @@ export default function Planner() {
     const height =
       ((ev.endMin - ev.startMin) / 60) * layout.rowH;
 
-    return {
+    const base = {
       left: `${left + 8}px`,
       top: `${top + 2}px`,
       width: `${width - 16}px`,
       height: `${Math.max(28, height - 4)}px`
     };
+
+    if (ev.color) {
+      const tint = hexToRgba(ev.color, 0.18);
+      return {
+        ...base,
+        borderLeft: `6px solid ${ev.color}`,
+        backgroundColor: tint || undefined
+      };
+    }
+
+    return base;
   }
 
   function getPopoverStyle(ev) {
@@ -838,9 +1123,12 @@ export default function Planner() {
             </div>
           )}
 
-          {events.map((ev) => (
+          {events.map((ev, idx) => (
             <div
-              key={ev.id}
+              key={
+                ev.id ??
+                `${ev.date}-${ev.startMin}-${ev.endMin}-${idx}`
+              }
               className={`planner__event ${
                 ev.kind === "schedule"
                   ? "planner__event--schedule"
@@ -849,7 +1137,7 @@ export default function Planner() {
               style={getEventStyle(ev)}
               onClick={(e) => {
                 e.stopPropagation();
-                setSelectedEventId(ev.id);
+                if (ev.id) setSelectedEventId(ev.id);
               }}
               title={ev.desc || ev.title}>
               <div className="planner__eventTitle">
@@ -899,7 +1187,11 @@ export default function Planner() {
               {weekDates.map((_, idx) => (
                 <div
                   key={`${idx}-${hour}`}
-                  className={`planner__cell ${isCurrentWeek && idx === todayIndex ? "planner__cell--today" : ""}`}
+                  className={`planner__cell ${
+                    isCurrentWeek && idx === todayIndex
+                      ? "planner__cell--today"
+                      : ""
+                  }`}
                 />
               ))}
             </div>
@@ -922,7 +1214,8 @@ export default function Planner() {
               className="plannerModal__close"
               onClick={closeAdd}
               aria-label="Close"
-              style={{ top: 18, right: 22 }}>
+              style={{ top: 18, right: 22 }}
+              type="button">
               ✕
             </button>
 
@@ -992,15 +1285,21 @@ export default function Planner() {
               <div className="plannerModal__toggle">
                 <button
                   type="button"
-                  className={`plannerModal__pill ${kind === "schedule" ? "is-active is-schedule" : ""}`}
-                  onClick={() => setKind("schedule")}>
+                  className={`plannerModal__pill ${
+                    kind === "schedule"
+                      ? "is-active is-schedule"
+                      : ""
+                  }`}
+                  onClick={setKindToSchedule}>
                   schedule
                 </button>
                 <button
                   type="button"
-                  className={`plannerModal__pill ${kind === "task" ? "is-active is-task" : ""}`}
+                  className={`plannerModal__pill ${
+                    kind === "task" ? "is-active is-task" : ""
+                  }`}
                   onClick={() => {
-                    setKind("task");
+                    setKindToTask();
                     if (!priority) setPriority("medium");
                   }}>
                   task
@@ -1008,14 +1307,18 @@ export default function Planner() {
               </div>
             </div>
 
-            {/* Date + Time row */}
             <div className="plannerModal__row plannerModal__row--stack">
               <div className="plannerModal__field">
                 <label>Date</label>
                 <input
                   type="date"
                   value={dateStr}
-                  onChange={(e) => setDateStr(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setDateStr(v);
+                    if (repeatEnabled)
+                      setRepeatDaysDefaultForDate(v);
+                  }}
                 />
               </div>
 
@@ -1039,67 +1342,125 @@ export default function Planner() {
               </div>
             </div>
 
-            {/* Recurrence moved under Date/Time and above Description */}
-            {kind === "schedule" && !editingId && (
-              <div className="plannerModal__field plannerModal__recur">
-                <label>Recurrence</label>
+            <div className="plannerModal__field">
+              <label>Color</label>
+              <div className="colorRowSimple">
+                {EVENT_COLOR_OPTIONS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    className={`swatchSimple ${color === c ? "selected" : ""}`}
+                    style={{ background: c }}
+                    onClick={() => setColor(c)}
+                    aria-label={`Select color ${c}`}
+                    title={c}
+                  />
+                ))}
+              </div>
+            </div>
 
-                <div className="plannerModal__recurToggleRow">
-                  <label className="plannerModal__recurToggle">
-                    <input
-                      type="checkbox"
-                      checked={repeatEnabled}
+            <div className="plannerModal__field plannerModal__recur">
+              <label>Recurrence</label>
+
+              <label className="plannerModal__recurToggle">
+                <input
+                  type="checkbox"
+                  checked={repeatEnabled}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setRepeatEnabled(checked);
+
+                    // when turning on, default to the selected date's weekday
+                    if (checked)
+                      setRepeatDaysDefaultForDate(dateStr);
+
+                    // when turning off, clear series link
+                    if (!checked) setSeriesId(null);
+                  }}
+                />
+                Repeat
+              </label>
+
+              {repeatEnabled && (
+                <div className="plannerModal__recurGrid">
+                  <div className="plannerModal__recurCol">
+                    <div className="plannerModal__recurHint">
+                      How often
+                    </div>
+                    <select
+                      className="plannerModal__recurControl"
+                      value={repeatEveryWeeks}
                       onChange={(e) =>
-                        setRepeatEnabled(e.target.checked)
-                      }
-                    />
-                    Repeat
-                  </label>
-                </div>
+                        setRepeatEveryWeeks(
+                          Number(e.target.value)
+                        )
+                      }>
+                      <option value={1}>Every week</option>
+                      <option value={2}>
+                        Every other week
+                      </option>
+                    </select>
+                  </div>
 
-                {repeatEnabled && (
-                  <div className="plannerModal__recurGrid">
-                    <div className="plannerModal__recurCol">
-                      <div className="plannerModal__recurHint">
-                        How often
-                      </div>
-                      <select
-                        className="plannerModal__recurControl"
-                        value={repeatEveryWeeks}
-                        onChange={(e) =>
-                          setRepeatEveryWeeks(
-                            Number(e.target.value)
-                          )
-                        }>
-                        <option value={1}>Every week</option>
-                        <option value={2}>
-                          Every other week
-                        </option>
-                      </select>
+                  <div className="plannerModal__recurCol">
+                    <div className="plannerModal__recurHint">
+                      Repeat on
                     </div>
-
-                    <div className="plannerModal__recurCol">
-                      <div className="plannerModal__recurHint">
-                        Until
-                      </div>
-                      <input
-                        className="plannerModal__recurControl"
-                        type="date"
-                        value={repeatUntil}
-                        onChange={(e) =>
-                          setRepeatUntil(e.target.value)
-                        }
-                      />
-                    </div>
-
-                    <div className="plannerModal__recurNote">
-                      Repeats on the same weekday as the
-                      selected date.
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 6,
+                        flexWrap: "wrap"
+                      }}>
+                      {dayNames.map((dn, idx) => {
+                        const active = repeatDays[idx];
+                        return (
+                          <button
+                            key={dn}
+                            type="button"
+                            onClick={() => {
+                              setRepeatDays((prev) => {
+                                const next = [...prev];
+                                next[idx] = !next[idx];
+                                return next;
+                              });
+                            }}
+                            className={`plannerModal__pill ${
+                              active ? "is-active" : ""
+                            }`}
+                            style={{
+                              padding: "6px 10px",
+                              opacity: active ? 1 : 0.75
+                            }}>
+                            {dn}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                )}
-              </div>
-            )}
+
+                  <div className="plannerModal__recurCol">
+                    <div className="plannerModal__recurHint">
+                      Until
+                    </div>
+                    <input
+                      className="plannerModal__recurControl"
+                      type="date"
+                      value={repeatUntil}
+                      onChange={(e) =>
+                        setRepeatUntil(e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div className="plannerModal__recurNote">
+                    {editingId
+                      ? "Editing recurrence will create additional future copies starting after this event."
+                      : "Repeats on the selected days, weekly or every other week."}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="plannerModal__field">
               <label>Description</label>
@@ -1142,19 +1503,22 @@ export default function Planner() {
             <div className="focusModal__top">
               <button
                 type="button"
-                className={`focusModal__pill ${focusMode === "work" ? "is-active" : ""}`}
+                className={`focusModal__pill ${
+                  focusMode === "work" ? "is-active" : ""
+                }`}
                 onClick={() => setMode("work")}>
                 work timer
               </button>
               <button
                 type="button"
-                className={`focusModal__pill ${focusMode === "break" ? "is-active" : ""}`}
+                className={`focusModal__pill ${
+                  focusMode === "break" ? "is-active" : ""
+                }`}
                 onClick={() => setMode("break")}>
                 break timer
               </button>
             </div>
 
-            {/* New duration row (no overflow) */}
             <div className="focusModal__durations">
               <div className="focusModal__durRow">
                 <label className="focusModal__durLabel">

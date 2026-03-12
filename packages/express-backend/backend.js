@@ -1,3 +1,4 @@
+// backend.js
 import dotenv from "dotenv";
 dotenv.config(); // Local .env if present; Azure uses App Settings env vars
 
@@ -106,7 +107,12 @@ function normalizeEvent(doc) {
     startMin: doc.startMin,
     endMin: doc.endMin,
     priority: doc.priority ?? "medium",
-    completed: !!doc.completed
+    completed: !!doc.completed,
+
+    // ✅ NEW
+    color: doc.color ?? null,
+    seriesId: doc.seriesId ?? null,
+    recurrence: doc.recurrence ?? null
   };
 }
 
@@ -114,6 +120,75 @@ function normalizePriority(p) {
   const v = String(p ?? "").toLowerCase();
   if (!["low", "medium", "high"].includes(v)) return null;
   return v;
+}
+
+/**
+ * ✅ MINIMAL CHANGE:
+ * - Frontend no longer sends `mode`
+ * - New recurrence shape: { everyWeeks: 1|2, days: [7 bools], until: "YYYY-MM-DD" }
+ * - Keep backward compatibility: if old { mode: ... } arrives, we accept and convert.
+ */
+function normalizeRecurrence(rec) {
+  if (rec === null || rec === undefined) return null;
+  if (typeof rec !== "object") return null;
+
+  // Always require until
+  const until = rec.until;
+  if (!isYmd(until)) return null;
+
+  // NEW SHAPE (no mode)
+  if (rec.mode === undefined) {
+    const everyWeeks = Number(rec.everyWeeks);
+    if (everyWeeks !== 1 && everyWeeks !== 2) return null;
+
+    const days = rec.days;
+    if (!Array.isArray(days) || days.length !== 7) return null;
+
+    // require at least one selected day
+    if (!days.some(Boolean)) return null;
+
+    return {
+      everyWeeks,
+      days: days.map(Boolean),
+      until
+    };
+  }
+
+  // OLD SHAPE (with mode) - accept and convert to new shape
+  const mode = rec.mode;
+  if (mode !== "interval" && mode !== "custom") return null;
+
+  if (mode === "interval") {
+    const everyWeeks = Number(rec.everyWeeks);
+    if (everyWeeks !== 1 && everyWeeks !== 2) return null;
+
+    // Old interval may or may not have days; if missing, reject
+    // (Your new frontend always sends days anyway.)
+    const days = rec.days;
+    if (!Array.isArray(days) || days.length !== 7) return null;
+    if (!days.some(Boolean)) return null;
+
+    return {
+      everyWeeks,
+      days: days.map(Boolean),
+      until
+    };
+  }
+
+  // mode === "custom"
+  // Old custom might not have everyWeeks; default to 1
+  const ew = Number(rec.everyWeeks);
+  const everyWeeks = ew === 2 ? 2 : 1;
+
+  const days = rec.days;
+  if (!Array.isArray(days) || days.length !== 7) return null;
+  if (!days.some(Boolean)) return null;
+
+  return {
+    everyWeeks,
+    days: days.map(Boolean),
+    until
+  };
 }
 
 /* =========================
@@ -387,7 +462,12 @@ app.post(
         startMin,
         endMin,
         priority,
-        completed
+        completed,
+
+        // ✅ NEW
+        color,
+        seriesId,
+        recurrence
       } = req.body || {};
 
       if (kind !== "task" && kind !== "schedule")
@@ -430,7 +510,13 @@ app.post(
         startMin: s,
         endMin: e,
         priority: pr,
-        completed: done
+        completed: done,
+
+        // ✅ NEW
+        color: typeof color === "string" ? color : null,
+        seriesId:
+          typeof seriesId === "string" ? seriesId : null,
+        recurrence: normalizeRecurrence(recurrence)
       });
 
       return res.status(201).json(normalizeEvent(created));
@@ -495,6 +581,29 @@ app.put(
         if (e === null)
           return res.status(400).send("Invalid endMin");
         update.endMin = e;
+      }
+
+      // ✅ NEW: color
+      if (req.body?.color !== undefined) {
+        update.color =
+          typeof req.body.color === "string"
+            ? req.body.color
+            : null;
+      }
+
+      // ✅ NEW: seriesId
+      if (req.body?.seriesId !== undefined) {
+        update.seriesId =
+          typeof req.body.seriesId === "string"
+            ? req.body.seriesId
+            : null;
+      }
+
+      // ✅ NEW: recurrence
+      if (req.body?.recurrence !== undefined) {
+        update.recurrence = normalizeRecurrence(
+          req.body.recurrence
+        );
       }
 
       const finalStart = update.startMin ?? existing.startMin;
@@ -622,6 +731,7 @@ app.get(
         ownerId,
         weekStart
       }).lean();
+
       return res.json(
         doc
           ? { weekStart: doc.weekStart, text: doc.text }
