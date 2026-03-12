@@ -87,14 +87,6 @@ export default function Planners() {
   // server events for overview panels
   const [eventsByPlanner, setEventsByPlanner] = useState({}); // { [plannerId]: Event[] }
 
-  // ---------- CLOCKIN NOTIFICATION TOAST (CLIENT-SIDE) ----------
-  // Shows a banner when a task/schedule starts (based on events we already fetch).
-  const [clockInNotification, setClockInNotification] =
-    useState(null);
-  const [dismissedEventIds, setDismissedEventIds] = useState(
-    () => new Set()
-  );
-
   const todayStr = useMemo(
     () => toDateInputValue(new Date()),
     []
@@ -337,55 +329,6 @@ export default function Planners() {
     return out;
   }, [planners, eventsByPlanner]);
 
-  // ClockIn notification!
-  useEffect(() => {
-    if (!allEvents || allEvents.length === 0) return;
-
-    const getStartDateTime = (ev) => {
-      // date is "YYYY-MM-DD" and startMin is minutes from midnight
-      const base = new Date(`${ev.date}T00:00:00`);
-      const mins = ev.startMin ?? 0;
-      base.setMinutes(base.getMinutes() + mins);
-      return base;
-    };
-
-    const pickNextEvent = () => {
-      const now = new Date();
-
-      // Filter out dismissed events
-      const candidates = allEvents
-        .filter((ev) => ev?.id && !dismissedEventIds.has(ev.id))
-        // OPTIONAL: ignore completed tasks if you want
-        // .filter((ev) => !(ev.kind === "task" && ev.completed))
-        .map((ev) => ({ ev, start: getStartDateTime(ev) }))
-        // only keep events that are not too far in the past
-        .filter(
-          ({ start }) =>
-            start.getTime() >= now.getTime() - 10 * 60 * 1000
-        )
-        .sort((a, b) => a.start - b.start);
-
-      return candidates[0]?.ev ?? null;
-    };
-
-    const check = () => {
-      const next = pickNextEvent();
-
-      // Debug to verify it is selecting something:
-      // console.log("ClockIn next:", next);
-
-      if (next) setClockInNotification(next);
-      else setClockInNotification(null);
-    };
-
-    // Run immediately (important)
-    check();
-
-    // Then keep checking in case schedule changes
-    const interval = setInterval(check, 15_000);
-    return () => clearInterval(interval);
-  }, [allEvents, dismissedEventIds]);
-
   const todaysTasks = useMemo(() => {
     const priorityWeight = { high: 0, medium: 1, low: 2 };
 
@@ -453,50 +396,6 @@ export default function Planners() {
 
   return (
     <div className="plannersPage">
-      {clockInNotification && (
-        <div
-          className="clockinToast"
-          role="status"
-          aria-live="polite">
-          <button
-            className="clockinToastClose"
-            type="button"
-            aria-label="Dismiss notification"
-            onClick={() => {
-              setDismissedEventIds((prev) => {
-                const next = new Set(prev);
-                next.add(clockInNotification.id);
-                return next;
-              });
-              setClockInNotification(null);
-            }}>
-            ✕
-          </button>
-
-          <div className="clockinToastIcon" aria-hidden="true">
-            <div className="clockinToastClock" />
-          </div>
-
-          <div className="clockinToastBody">
-            <div className="clockinToastTitle">
-              Hello! It is time to ClockIn!
-            </div>
-            <div className="clockinToastMsg">
-              You have{" "}
-              {clockInNotification.kind === "task"
-                ? "Task"
-                : "Schedule"}{" "}
-              - {clockInNotification.title} from{" "}
-              {minutesToLabel(
-                clockInNotification.startMin ?? 0
-              )}
-              {clockInNotification.endMin != null
-                ? ` - ${minutesToLabel(clockInNotification.endMin)}`
-                : ""}
-            </div>
-          </div>
-        </div>
-      )}
       <main className="plannersMain">
         {/* LEFT SIDE */}
         <section className="tilesArea">
