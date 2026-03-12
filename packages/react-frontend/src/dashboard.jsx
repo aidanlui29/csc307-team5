@@ -72,6 +72,7 @@ export default function Dashboard() {
 
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState("priority");
+  const [scope, setScope] = useState("all");
   const todayStr = useMemo(() => toYYYYMMDD(new Date()), []);
 
   // -------- Focus timer --------
@@ -306,16 +307,43 @@ export default function Dashboard() {
       return { todayOpenCount, weekOpenTotal, weekCompleted };
     }, [tasks, todayStr]);
 
+  const now = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const weekStart = useMemo(() => startOfWeek(now), [now]);
+  const weekEnd = useMemo(() => endOfWeek(now), [now]);
+
   const filteredTasks = useMemo(() => {
+    // 1) scope filtering (today/week/etc)
+    let scoped = tasks;
+
+    if (scope === "today") {
+      scoped = tasks.filter((t) => t.date === todayStr);
+    } else if (scope === "week") {
+      scoped = tasks.filter((t) =>
+        inRangeYYYYMMDD(t.date, weekStart, weekEnd)
+      );
+    } else if (scope === "weekCompleted") {
+      scoped = tasks.filter(
+        (t) =>
+          inRangeYYYYMMDD(t.date, weekStart, weekEnd) &&
+          !!t.completed
+      );
+    }
+
+    // 2) text query filtering
     const q = query.trim().toLowerCase();
     const base = q
-      ? tasks.filter((t) =>
+      ? scoped.filter((t) =>
           (t.title || "").toLowerCase().includes(q)
         )
-      : tasks.slice();
+      : scoped.slice();
 
+    // 3) sorting
     const priorityRank = { high: 0, medium: 1, low: 2 };
-
     base.sort((a, b) => {
       if (sortBy === "date")
         return (a.date || "").localeCompare(b.date || "");
@@ -326,7 +354,15 @@ export default function Dashboard() {
     });
 
     return base;
-  }, [tasks, query, sortBy]);
+  }, [
+    tasks,
+    scope,
+    todayStr,
+    weekStart,
+    weekEnd,
+    query,
+    sortBy
+  ]);
 
   return (
     <div className={`dash ${focusOpen ? "dash--blurred" : ""}`}>
@@ -344,7 +380,14 @@ export default function Dashboard() {
 
       <div className="dash__layout">
         <div className="dash__stats">
-          <div className="dashStatCard">
+          <div
+            className={`dashStatCard ${scope === "week" ? "dashStatCard--active" : ""}`}
+            role="button"
+            tabIndex={0}
+            aria-pressed={scope === "week"}
+            onClick={() => setScope("week")}
+            onKeyDown={(e) => handleScopeKeyDown(e, "week")}
+            title="Show only this week's tasks">
             <div className="dashStatIcon">
               <UserCheck size={28} />
             </div>
@@ -356,7 +399,16 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="dashStatCard">
+          <div
+            className={`dashStatCard ${scope === "weekCompleted" ? "dashStatCard--active" : ""}`}
+            role="button"
+            tabIndex={0}
+            aria-pressed={scope === "weekCompleted"}
+            onClick={() => setScope("weekCompleted")}
+            onKeyDown={(e) =>
+              handleScopeKeyDown(e, "weekCompleted")
+            }
+            title="Show only completed tasks from this week">
             <div className="dashStatIcon">
               <Users size={28} />
             </div>
@@ -370,7 +422,16 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="dashStatCard">
+          <div
+            className={`dashStatCard ${scope === "weekCompleted" ? "dashStatCard--active" : ""}`}
+            role="button"
+            tabIndex={0}
+            aria-pressed={scope === "weekCompleted"}
+            onClick={() => setScope("weekCompleted")}
+            onKeyDown={(e) =>
+              handleScopeKeyDown(e, "weekCompleted")
+            }
+            title="Show only completed tasks from this week">
             <div className="dashStatIcon">
               <Users size={28} />
             </div>
@@ -387,7 +448,13 @@ export default function Dashboard() {
 
         <div className="dash__mainCard">
           <div className="dash__mainHeader">
-            <h2 className="dash__title">All Tasks</h2>
+            <h2
+              className="dash__title"
+              style={{ cursor: "pointer" }}
+              onClick={() => setScope("all")}
+              title="Click to show all tasks">
+              {scopeTitle(scope)}
+            </h2>
 
             <div className="dash__controls">
               <div className="dash__searchMini">
