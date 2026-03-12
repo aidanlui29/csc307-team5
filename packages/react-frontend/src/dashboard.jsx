@@ -75,6 +75,20 @@ export default function Dashboard() {
   const [scope, setScope] = useState("all");
   const todayStr = useMemo(() => toYYYYMMDD(new Date()), []);
 
+  function scopeTitle(s) {
+    if (s === "today") return "Today's Tasks";
+    if (s === "week") return "Tasks This Week";
+    if (s === "weekCompleted") return "Completed This Week";
+    return "All Tasks";
+  }
+
+  function handleScopeKeyDown(e, nextScope) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setScope(nextScope);
+    }
+  }
+
   // -------- Focus timer --------
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusMode, setFocusMode] = useState("work");
@@ -381,13 +395,13 @@ export default function Dashboard() {
       <div className="dash__layout">
         <div className="dash__stats">
           <div
-            className={`dashStatCard ${scope === "week" ? "dashStatCard--active" : ""}`}
+            className={`dashStatCard ${scope === "today" ? "dashStatCard--active" : ""}`}
             role="button"
             tabIndex={0}
-            aria-pressed={scope === "week"}
-            onClick={() => setScope("week")}
-            onKeyDown={(e) => handleScopeKeyDown(e, "week")}
-            title="Show only this week's tasks">
+            aria-pressed={scope === "today"}
+            onClick={() => setScope("today")}
+            onKeyDown={(e) => handleScopeKeyDown(e, "today")}
+            title="Show only today's tasks">
             <div className="dashStatIcon">
               <UserCheck size={28} />
             </div>
@@ -400,15 +414,13 @@ export default function Dashboard() {
           </div>
 
           <div
-            className={`dashStatCard ${scope === "weekCompleted" ? "dashStatCard--active" : ""}`}
+            className={`dashStatCard ${scope === "week" ? "dashStatCard--active" : ""}`}
             role="button"
             tabIndex={0}
-            aria-pressed={scope === "weekCompleted"}
-            onClick={() => setScope("weekCompleted")}
-            onKeyDown={(e) =>
-              handleScopeKeyDown(e, "weekCompleted")
-            }
-            title="Show only completed tasks from this week">
+            aria-pressed={scope === "week"}
+            onClick={() => setScope("week")}
+            onKeyDown={(e) => handleScopeKeyDown(e, "week")}
+            title="Show only this week's tasks">
             <div className="dashStatIcon">
               <Users size={28} />
             </div>
