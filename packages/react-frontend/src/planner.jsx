@@ -1186,7 +1186,7 @@ export default function Planner() {
           <div
             className="plannerToast__icon"
             aria-hidden="true">
-            <Clock size={22} />
+            <Clock size={36} />
           </div>
 
           <div className="plannerToast__body">
