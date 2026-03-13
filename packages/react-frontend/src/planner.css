@@ -785,3 +785,17 @@ body {
   font-size: 14px;
   line-height: 1.25;
 }
+.clockinContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.clockinTitle {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.clockinMessage {
+  font-size: 15px;
+}
