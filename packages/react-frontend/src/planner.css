@@ -770,9 +770,9 @@ body {
 }
 
 .plannerToast__icon {
-    flex-shrink: 0;
-    margin-top: 2px; /* slightly aligns with first text line */
-  }
+  flex-shrink: 0;
+  margin-top: 2px; /* slightly aligns with first text line */
+}
 
 .plannerToast__title {
   font-weight: 900;
