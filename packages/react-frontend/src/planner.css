@@ -734,18 +734,19 @@ body {
 /* ---------- ClockIn Toast (top-right, compact) ---------- */
 .plannerToast {
   position: fixed;
-  top: 18px;
-  right: 18px;
-  width: min(360px, calc(100vw - 36px));
-  background: #ffffff;
-  color: #111;
+  top: 20px;
+  right: 20px;
+  background: #f3f3f3;
   border-radius: 18px;
-  padding: 14px 14px 14px 52px;
-  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.35);
-  z-index: 5000;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 6px;
+  padding: 18px 22px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+
+  max-width: 420px;
 }
 
 .plannerToast__close {
@@ -769,10 +770,9 @@ body {
 }
 
 .plannerToast__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+    flex-shrink: 0;
+    margin-top: 2px; /* slightly aligns with first text line */
+  }
 
 .plannerToast__title {
   font-weight: 900;
