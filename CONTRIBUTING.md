@@ -48,7 +48,7 @@ Create `.env` in `packages/backend`:
 ```env
 PORT=5000
 MONGO_URI=<your-mongodb-connection-string>
-JWT_SECRET=<your-secret-key>
+TOKEN_SECRET=<your-secret-key>
 ```
 
 Create `.env.production` in `packages/react-frontend`:
