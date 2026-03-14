@@ -1,6 +1,6 @@
 // backend.js
 import dotenv from "dotenv";
-dotenv.config(); // Local .env if present; Azure uses App Settings env vars
+dotenv.config();
 
 import express from "express";
 import cors from "cors";
@@ -17,10 +17,6 @@ const app = express();
 
 app.use(express.json());
 
-/* =========================
-   CORS (local now, deployed later)
-   ========================= */
-
 const allowedOrigins = [
   "http://localhost:5173",
   "https://salmon-field-0381bb210.1.azurestaticapps.net"
@@ -32,10 +28,6 @@ app.use(
     credentials: true
   })
 );
-
-/* =========================
-   JWT helpers + middleware
-   ========================= */
 
 function generateAccessToken(user) {
   const secret = process.env.TOKEN_SECRET;
@@ -53,7 +45,7 @@ function generateAccessToken(user) {
 }
 
 function authenticateUser(req, res, next) {
-  const authHeader = req.headers.authorization; // "Bearer <token>"
+  const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
   if (!token) return res.status(401).send("Unauthorized");
 
@@ -63,15 +55,11 @@ function authenticateUser(req, res, next) {
     (err, decoded) => {
       if (err || !decoded)
         return res.status(401).send("Unauthorized");
-      req.user = decoded; // { userId, email, iat, exp }
+      req.user = decoded;
       next();
     }
   );
 }
-
-/* =========================
-   Helpers
-   ========================= */
 
 function isYmd(s) {
   return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
@@ -122,21 +110,13 @@ function normalizePriority(p) {
   return v;
 }
 
-/**
- * ✅ MINIMAL CHANGE:
- * - Frontend no longer sends `mode`
- * - New recurrence shape: { everyWeeks: 1|2, days: [7 bools], until: "YYYY-MM-DD" }
- * - Keep backward compatibility: if old { mode: ... } arrives, we accept and convert.
- */
 function normalizeRecurrence(rec) {
   if (rec === null || rec === undefined) return null;
   if (typeof rec !== "object") return null;
 
-  // Always require until
   const until = rec.until;
   if (!isYmd(until)) return null;
 
-  // NEW SHAPE (no mode)
   if (rec.mode === undefined) {
     const everyWeeks = Number(rec.everyWeeks);
     if (everyWeeks !== 1 && everyWeeks !== 2) return null;
@@ -144,7 +124,6 @@ function normalizeRecurrence(rec) {
     const days = rec.days;
     if (!Array.isArray(days) || days.length !== 7) return null;
 
-    // require at least one selected day
     if (!days.some(Boolean)) return null;
 
     return {
@@ -154,7 +133,6 @@ function normalizeRecurrence(rec) {
     };
   }
 
-  // OLD SHAPE (with mode) - accept and convert to new shape
   const mode = rec.mode;
   if (mode !== "interval" && mode !== "custom") return null;
 
@@ -162,8 +140,6 @@ function normalizeRecurrence(rec) {
     const everyWeeks = Number(rec.everyWeeks);
     if (everyWeeks !== 1 && everyWeeks !== 2) return null;
 
-    // Old interval may or may not have days; if missing, reject
-    // (Your new frontend always sends days anyway.)
     const days = rec.days;
     if (!Array.isArray(days) || days.length !== 7) return null;
     if (!days.some(Boolean)) return null;
@@ -175,8 +151,6 @@ function normalizeRecurrence(rec) {
     };
   }
 
-  // mode === "custom"
-  // Old custom might not have everyWeeks; default to 1
   const ew = Number(rec.everyWeeks);
   const everyWeeks = ew === 2 ? 2 : 1;
 
@@ -191,14 +165,10 @@ function normalizeRecurrence(rec) {
   };
 }
 
-/* =========================
-   WEEKLY REFLECTION (Mongo)
-   ========================= */
-
 const WeeklyReflectionSchema = new mongoose.Schema(
   {
-    ownerId: { type: String, required: true }, // keep as String (matches rest of app)
-    weekStart: { type: String, required: true }, // "YYYY-MM-DD"
+    ownerId: { type: String, required: true },
+    weekStart: { type: String, required: true },
     text: { type: String, default: "" }
   },
   { timestamps: true }
@@ -213,19 +183,11 @@ const WeeklyReflection =
   mongoose.models.WeeklyReflection ||
   mongoose.model("WeeklyReflection", WeeklyReflectionSchema);
 
-/* =========================
-   Health / debug
-   ========================= */
-
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
 app.get("/api/me", authenticateUser, (req, res) => {
   res.json({ user: req.user });
 });
-
-/* =========================
-   AUTH
-   ========================= */
 
 app.post("/api/auth/signup", async (req, res) => {
   try {
@@ -280,10 +242,6 @@ app.post("/api/auth/login", async (req, res) => {
     return res.status(500).send("Server error");
   }
 });
-
-/* =========================
-   PLANNERS (Mongo)
-   ========================= */
 
 app.get("/api/planners", authenticateUser, async (req, res) => {
   try {
@@ -349,7 +307,7 @@ app.put(
       const updated = await Planner.findOneAndUpdate(
         { _id: id, ownerId },
         { $set: update },
-        { returnDocument: "after" } // ✅ replaces deprecated { new: true }
+        { returnDocument: "after" }
       );
 
       if (!updated)
@@ -386,10 +344,6 @@ app.delete(
     }
   }
 );
-
-/* =========================
-   EVENTS (Mongo)
-   ========================= */
 
 app.get(
   "/api/planners/:plannerId/events",
@@ -464,7 +418,6 @@ app.post(
         priority,
         completed,
 
-        // ✅ NEW
         color,
         seriesId,
         recurrence
@@ -512,7 +465,6 @@ app.post(
         priority: pr,
         completed: done,
 
-        // ✅ NEW
         color: typeof color === "string" ? color : null,
         seriesId:
           typeof seriesId === "string" ? seriesId : null,
@@ -583,7 +535,6 @@ app.put(
         update.endMin = e;
       }
 
-      // ✅ NEW: color
       if (req.body?.color !== undefined) {
         update.color =
           typeof req.body.color === "string"
@@ -591,7 +542,6 @@ app.put(
             : null;
       }
 
-      // ✅ NEW: seriesId
       if (req.body?.seriesId !== undefined) {
         update.seriesId =
           typeof req.body.seriesId === "string"
@@ -599,7 +549,6 @@ app.put(
             : null;
       }
 
-      // ✅ NEW: recurrence
       if (req.body?.recurrence !== undefined) {
         update.recurrence = normalizeRecurrence(
           req.body.recurrence
@@ -663,7 +612,7 @@ app.delete(
 
 function getWeekRange(now = new Date()) {
   const d = new Date(now);
-  const day = (d.getDay() + 6) % 7; // Mon=0 ... Sun=6
+  const day = (d.getDay() + 6) % 7;
   d.setHours(0, 0, 0, 0);
   const start = new Date(d);
   start.setDate(start.getDate() - day);
@@ -679,10 +628,6 @@ function toYmd(d) {
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
-
-/* =========================
-   FEEDBACK (Mongo)
-   ========================= */
 
 app.get("/api/feedback", authenticateUser, async (req, res) => {
   try {
@@ -711,10 +656,6 @@ app.get("/api/feedback", authenticateUser, async (req, res) => {
     return res.status(500).send(err?.message || "Server error");
   }
 });
-
-/* =========================
-   REFLECTIONS (Mongo)
-   ========================= */
 
 app.get(
   "/api/reflections/week/:weekStart",
@@ -763,7 +704,7 @@ app.put(
       const updated = await WeeklyReflection.findOneAndUpdate(
         { ownerId, weekStart },
         { $set: { text: text ?? "" } },
-        { returnDocument: "after", upsert: true } // ✅ replaces deprecated { new: true }
+        { returnDocument: "after", upsert: true }
       ).lean();
 
       return res.json({
@@ -779,18 +720,12 @@ app.put(
   }
 );
 
-/* =========================
-   Start (Azure-safe)
-   ========================= */
-
 const port = process.env.PORT || 3001;
 
-// Start server first so Azure has something listening even if DB is slow/down
 app.listen(port, () => {
   console.log(`Server running on ${port}`);
 });
 
-// Connect DB in background (logs errors instead of hanging startup)
 (async function connectDbInBackground() {
   try {
     if (!process.env.MONGODB_URI) {

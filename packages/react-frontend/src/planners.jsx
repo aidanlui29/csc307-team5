@@ -30,12 +30,12 @@ function addDays(date, n) {
   return d;
 }
 
-// rolling window: startDateStr (YYYY-MM-DD) -> next 7 days
+// Checks whether a date falls within the next 7-day rolling window.
 function isDateInNext7Days(dateStr, startDateStr) {
   const d = new Date(`${dateStr}T00:00:00`);
   const start = new Date(`${startDateStr}T00:00:00`);
   start.setHours(0, 0, 0, 0);
-  const end = addDays(start, 7); // exclusive
+  const end = addDays(start, 7);
   return d >= start && d < end;
 }
 
@@ -68,7 +68,6 @@ export default function Planners() {
   const [planners, setPlanners] = useState([]);
   const [error, setError] = useState("");
 
-  // create/edit modal state
   const [plannerModalOpen, setPlannerModalOpen] =
     useState(false);
   const [plannerName, setPlannerName] = useState("");
@@ -79,20 +78,18 @@ export default function Planners() {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // delete confirm modal
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmPlanner, setConfirmPlanner] = useState(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
 
-  // server events for overview panels
-  const [eventsByPlanner, setEventsByPlanner] = useState({}); // { [plannerId]: Event[] }
+  const [eventsByPlanner, setEventsByPlanner] = useState({});
 
   const todayStr = useMemo(
     () => toDateInputValue(new Date()),
     []
   );
 
-  // Load planners list
+  // Loads the planner list for the authenticated user.
   useEffect(() => {
     let cancelled = false;
 
@@ -130,7 +127,7 @@ export default function Planners() {
     };
   }, [navigate]);
 
-  // Load events for each planner (for Today/Weekly panels)
+  // Loads events for each planner so the overview panels can be built from server data.
   useEffect(() => {
     let cancelled = false;
 
@@ -168,7 +165,7 @@ export default function Planners() {
           obj[plannerId] = evs;
         setEventsByPlanner(obj);
       } catch {
-        // ignore
+        // Ignore overview load errors and keep the main planner list usable.
       }
     }
 
@@ -204,6 +201,7 @@ export default function Planners() {
     setEditingId(null);
   }
 
+  // Creates a new planner or updates an existing one, depending on editing state.
   async function savePlanner() {
     setFormError("");
 
@@ -311,7 +309,7 @@ export default function Planners() {
     }
   }
 
-  // ---------- BUILD OVERVIEW LISTS (FROM SERVER EVENTS) ----------
+  // Flattens server events into one list while attaching planner metadata for display panels.
   const allEvents = useMemo(() => {
     const out = [];
     for (const p of planners) {
@@ -329,6 +327,7 @@ export default function Planners() {
     return out;
   }, [planners, eventsByPlanner]);
 
+  // Builds the "Today's Tasks" panel from incomplete task events scheduled for today.
   const todaysTasks = useMemo(() => {
     const priorityWeight = { high: 0, medium: 1, low: 2 };
 
@@ -362,6 +361,7 @@ export default function Planners() {
     return items;
   }, [allEvents, todayStr]);
 
+  // Builds the next-7-days schedule overview from schedule events only.
   const weeklySchedule = useMemo(() => {
     const items = allEvents
       .filter(
@@ -397,7 +397,6 @@ export default function Planners() {
   return (
     <div className="plannersPage">
       <main className="plannersMain">
-        {/* LEFT SIDE */}
         <section className="tilesArea">
           <div className="tilesGrid">
             {planners.map((p) => (
@@ -448,7 +447,6 @@ export default function Planners() {
           </div>
         </section>
 
-        {/* RIGHT SIDE */}
         <aside className="rightPanels">
           <div className="panelCard">
             <div className="panelHeader">
@@ -524,7 +522,6 @@ export default function Planners() {
         </aside>
       </main>
 
-      {/* Create/Edit Modal */}
       {plannerModalOpen && (
         <div
           className="plannerModal"
@@ -537,7 +534,6 @@ export default function Planners() {
             onClick={(e) => e.stopPropagation()}>
             <div style={{ height: 34 }} aria-hidden="true" />
 
-            {/* ✅ Match the task modal close button */}
             <button
               className="plannerModal__close"
               onClick={closeModal}

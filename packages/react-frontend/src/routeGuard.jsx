@@ -10,6 +10,7 @@ export default function RouteGuard() {
     token ? "checking" : "missing"
   );
 
+  // Verifies the stored token before allowing access to protected routes.
   useEffect(() => {
     if (!token) return;
 
@@ -23,12 +24,14 @@ export default function RouteGuard() {
 
         if (cancelled) return;
 
+        // Invalid or expired tokens are cleared and redirected to login.
         if (res.status === 401 || res.status === 403) {
           clearToken();
           setStatus("invalid");
           return;
         }
 
+        // Non-auth errors do not immediately block access.
         if (!res.ok) {
           setStatus("ok");
           return;

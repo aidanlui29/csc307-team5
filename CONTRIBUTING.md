@@ -1,24 +1,25 @@
 # Contributing to ClockedIn
 
-This document explains how developers should set up the project and follow the coding style used in this repository.
+This document explains how developers should set up the project
+and follow the coding style used in this repository.
 
 ## Project Structure
 
 ClockedIn is organized as a monorepo.
 
-- `packages/react-frontend/` — React (Vite) frontend  
-- `packages/backend/` — Express backend API with MongoDB  
-- `docs/` — UML diagrams and documentation  
+- `packages/react-frontend/` — React (Vite) frontend
+- `packages/backend/` — Express backend API with MongoDB
+- `docs/` — UML diagrams and documentation
 
-
-The main frontend routing is defined in `App.jsx`, and pages/components are located inside `packages/react-frontend/`.
+The main frontend routing is defined in `App.jsx`, and
+pages/components are located inside `packages/react-frontend/`.
 
 ## Development Setup
 
 ### Prerequisites
 
-- Node.js (v18+ recommended)  
-- npm  
+- Node.js (v18+ recommended)
+- npm
 - MongoDB (local or MongoDB Atlas)
 
 ### Installation
@@ -70,10 +71,10 @@ Backend: http://localhost:5000
 
 ## Coding Style
 
-- Use clear variable and function names  
-- Keep functions small and focused  
-- Remove unused imports or commented code  
-- Use React functional components and hooks  
+- Use clear variable and function names
+- Keep functions small and focused
+- Remove unused imports or commented code
+- Use React functional components and hooks
 - Follow the routing structure defined in `App.jsx`
 
 ## Git Workflow

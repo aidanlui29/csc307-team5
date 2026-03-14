@@ -20,6 +20,7 @@ import MenuDrawer from "./menuDrawer.jsx";
 function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Shared layout for pages that use both the top bar and the menu drawer.
   return (
     <div style={{ minHeight: "100vh" }}>
       <TopBar onMenuClick={() => setMenuOpen(true)} />
@@ -38,6 +39,7 @@ function Layout() {
 function DrawerOnlyLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Opens the drawer in response to the custom menu event dispatched from the planner page.
   useEffect(() => {
     const onOpen = () => setMenuOpen(true);
     window.addEventListener("clockedIn:openMenu", onOpen);
@@ -57,6 +59,7 @@ function DrawerOnlyLayout() {
 }
 
 export default function App() {
+  // Defines public routes, protected routes, and layout wrappers for the app.
   return (
     <BrowserRouter>
       <Routes>

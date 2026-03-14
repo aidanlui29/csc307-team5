@@ -204,7 +204,6 @@
   cursor: pointer;
 }
 
-/* blur background when focus modal is open (same idea as planner.css) */
 .dash--blurred > *:not(.focusModal) {
   filter: blur(6px);
   opacity: 0.65;
@@ -214,8 +213,6 @@
   pointer-events: none;
 }
 
-/* Reuse your existing focusModal styles by copying from planner.css if needed.
-     If you already have focusModal styles globally, you can omit this. */
 .focusModal {
   position: fixed;
   inset: 0;

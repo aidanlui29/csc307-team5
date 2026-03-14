@@ -10,6 +10,7 @@ export default function MenuDrawer({ open, onClose }) {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Closes the drawer when the Escape key is pressed.
   useEffect(() => {
     function onKeyDown(e) {
       if (e.key === "Escape") onClose();
@@ -19,6 +20,7 @@ export default function MenuDrawer({ open, onClose }) {
       window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
+  // Clears the stored authentication token and redirects to login.
   function handleLogout() {
     clearToken();
     onClose();
@@ -88,6 +90,7 @@ export default function MenuDrawer({ open, onClose }) {
   );
 }
 
+// Returns navigation link styling, highlighting the active route.
 function navStyle(active) {
   return {
     padding: "12px",

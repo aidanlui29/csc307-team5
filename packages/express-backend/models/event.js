@@ -21,19 +21,16 @@ const EventSchema = new mongoose.Schema(
       required: true
     },
 
-    date: { type: String, required: true }, // "YYYY-MM-DD"
+    date: { type: String, required: true },
     title: { type: String, required: true, trim: true },
     desc: { type: String, default: "" },
     startMin: { type: Number, required: true },
     endMin: { type: Number, required: true },
 
-    // optional color chosen in UI (hex)
     color: { type: String, default: null },
 
-    // group id for recurring set
     seriesId: { type: String, default: null },
 
-    // ✅ UPDATED: unified recurrence (no mode)
     recurrence: {
       type: {
         everyWeeks: {
@@ -50,13 +47,12 @@ const EventSchema = new mongoose.Schema(
           }
         },
         until: {
-          type: String // "YYYY-MM-DD"
+          type: String
         }
       },
       default: null
     },
 
-    // task-only semantics (still stored on all docs)
     priority: {
       type: String,
       enum: ["low", "medium", "high"],

@@ -3,7 +3,6 @@
   padding: 24px;
 }
 
-/* Header */
 .fbHeader {
   background: #ffffff;
   color: #111111;
@@ -71,7 +70,6 @@
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
 }
 
-/* Stats */
 .fbStats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -96,7 +94,6 @@
   color: #111;
 }
 
-/* Insights */
 .fbInsights {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -121,13 +118,11 @@
   color: #111;
 }
 
-/* Section title */
 .fbSectionTitle {
   font-weight: 800;
   margin-bottom: 10px;
 }
 
-/* Feedback textarea */
 .fbTextarea {
   width: 100%;
   box-sizing: border-box;

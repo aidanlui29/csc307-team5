@@ -7,7 +7,7 @@ const WeeklyReflectionSchema = new mongoose.Schema(
       required: true,
       index: true
     },
-    weekStart: { type: String, required: true, index: true }, // "YYYY-MM-DD"
+    weekStart: { type: String, required: true, index: true },
     text: { type: String, default: "" }
   },
   { timestamps: true }

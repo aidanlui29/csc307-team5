@@ -1,4 +1,5 @@
 export default function TopBar({ onMenuClick }) {
+  // Displays the application top navigation bar and triggers the menu drawer when clicked.
   return (
     <header
       style={{
@@ -34,11 +35,14 @@ export default function TopBar({ onMenuClick }) {
       </button>
 
       <div style={{ fontWeight: 800 }}>ClockedIn</div>
+
+      {/* Spacer to keep the title centered */}
       <div style={{ width: 40 }} />
     </header>
   );
 }
 
+// Style used for the hamburger menu lines.
 const barStyle = {
   display: "block",
   width: 18,

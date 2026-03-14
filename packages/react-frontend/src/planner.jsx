@@ -4,7 +4,6 @@ import { authHeaders } from "./auth";
 import "./planner.css";
 import { Pencil, Trash2, Clock, X } from "lucide-react";
 
-/* ---------- date helpers ---------- */
 function startOfWeek(date) {
   const d = new Date(date);
   const day = d.getDay();
@@ -12,14 +11,17 @@ function startOfWeek(date) {
   d.setHours(0, 0, 0, 0);
   return d;
 }
+
 function addDays(date, n) {
   const d = new Date(date);
   d.setDate(d.getDate() + n);
   return d;
 }
+
 function addWeeks(date, n) {
   return addDays(date, n * 7);
 }
+
 function sameDay(a, b) {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -27,6 +29,7 @@ function sameDay(a, b) {
     a.getDate() === b.getDate()
   );
 }
+
 function monthTitleForWeek(weekStart) {
   const weekEnd = addDays(weekStart, 6);
   const startMonth = weekStart.toLocaleString(undefined, {
@@ -47,21 +50,26 @@ function monthTitleForWeek(weekStart) {
     return `${startMonth} – ${endMonth} ${startYear}`;
   return `${startMonth} ${startYear} – ${endMonth} ${endYear}`;
 }
+
 function formatHour(hour24) {
   const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
   const ampm = hour24 < 12 ? "AM" : "PM";
   return `${hour12} ${ampm}`;
 }
+
 function pad2(n) {
   return String(n).padStart(2, "0");
 }
+
 function toDateInputValue(d) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
+
 function timeToMinutes(t) {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
 }
+
 function minutesToTime(mins) {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
@@ -77,12 +85,12 @@ function minutesToLabel(mins) {
   return `${h12}:${pad2(m)}${ampm}`;
 }
 
-// legacy localStorage key (migration only)
+// Used only for one-time migration from the original localStorage version.
 function storageKey(id) {
   return `plannerEvents_v1_${id || "default"}`;
 }
 
-// normalize event object coming from backend (id vs _id, etc.)
+// Normalizes backend event identifiers so the UI can always use ev.id.
 function normalizeEvent(raw) {
   if (!raw || typeof raw !== "object") return null;
   const id = raw.id ?? raw._id ?? raw.eventId ?? raw._eventId;
@@ -90,7 +98,7 @@ function normalizeEvent(raw) {
   return { ...raw, id };
 }
 
-// subtle color
+// Converts a hex color into a translucent background tint for event cards.
 function hexToRgba(hex, alpha) {
   if (typeof hex !== "string") return null;
   const h = hex.trim().replace("#", "");
@@ -111,15 +119,14 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// stable-ish series id generator (no deps)
+// Generates a stable-enough id for grouping repeated events into a series.
 function makeSeriesId() {
   return `series_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
 
-const DEFAULT_COLOR_SCHEDULE = "#22c55e"; // green
-const DEFAULT_COLOR_TASK = "#7c3aed"; // purple
+const DEFAULT_COLOR_SCHEDULE = "#22c55e";
+const DEFAULT_COLOR_TASK = "#7c3aed";
 
-// same circle/swatch style as Planners.jsx (more options)
 const EVENT_COLOR_OPTIONS = [
   "#22c55e",
   "#7c3aed",
@@ -136,7 +143,7 @@ const EVENT_COLOR_OPTIONS = [
 ];
 
 export default function Planner() {
-  const { id } = useParams(); // plannerId
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const dayNames = [
@@ -158,13 +165,12 @@ export default function Planner() {
   const [pageError, setPageError] = useState("");
   const [loadingEvents, setLoadingEvents] = useState(true);
 
-  // ---- ClockIn toast notification (Planner page only)
   const [clockInEvent, setClockInEvent] = useState(null);
   const [dismissedClockInIds, setDismissedClockInIds] =
     useState(() => new Set());
   const [shownClockInId, setShownClockInId] = useState(null);
 
-  // ---- load events from API + one-time migration from localStorage
+  // Loads planner events from the API and migrates legacy localStorage data once.
   useEffect(() => {
     let cancelled = false;
 
@@ -195,7 +201,6 @@ export default function Planner() {
 
         if (!cancelled) setEvents(serverEvents);
 
-        // ---- migrate legacy localStorage (only once per planner)
         const migratedFlag = `clockedInMigratedEvents_v1_${id}`;
         const alreadyMigrated =
           localStorage.getItem(migratedFlag) === "1";
@@ -210,7 +215,7 @@ export default function Planner() {
             legacy = [];
           }
 
-          // Only migrate if server has none (prevents duplicates)
+          // Migration only runs when the server does not already have events.
           if (legacy.length > 0 && serverEvents.length === 0) {
             for (const ev of legacy) {
               if (!ev?.title || !ev?.date || !ev?.kind)
@@ -258,7 +263,6 @@ export default function Planner() {
               }
             }
 
-            // re-fetch after migration
             const res2 = await fetch(
               `/api/planners/${id}/events`,
               {
@@ -295,14 +299,12 @@ export default function Planner() {
     };
   }, [id, navigate]);
 
-  /* ---------- Focus timer ---------- */
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusMode, setFocusMode] = useState("work");
 
   const [workMinutes, setWorkMinutes] = useState(25);
   const [breakMinutes, setBreakMinutes] = useState(5);
 
-  // ✅ no-unused-vars: we only need the setter
   const [, setDurationSec] = useState(25 * 60);
   const [remainingSec, setRemainingSec] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
@@ -361,6 +363,7 @@ export default function Planner() {
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   }
 
+  // Runs the focus timer countdown while the timer is active.
   useEffect(() => {
     if (!isRunning) return;
 
@@ -383,18 +386,15 @@ export default function Planner() {
     };
   }, [isRunning]);
 
-  /* ---------- UI state for add/edit ---------- */
   const [addOpen, setAddOpen] = useState(false);
   const [formError, setFormError] = useState("");
   const [savingEvent, setSavingEvent] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [selectedEventId, setSelectedEventId] = useState(null);
 
-  // task fields
   const [priority, setPriority] = useState("medium");
   const [completed, setCompleted] = useState(false);
 
-  // color
   const [color, setColor] = useState(DEFAULT_COLOR_SCHEDULE);
 
   const today = now;
@@ -430,6 +430,7 @@ export default function Planner() {
   const gridRef = useRef(null);
   const [layout, setLayout] = useState(null);
 
+  // Reads rendered grid measurements so events and the current-time line can be positioned accurately.
   useEffect(() => {
     const computeLayout = () => {
       if (!gridRef.current) return;
@@ -449,9 +450,9 @@ export default function Planner() {
       window.removeEventListener("resize", computeLayout);
   }, []);
 
-  // ✅ no window globals
   const nowIntervalRef = useRef(null);
 
+  // Updates the current time once per minute so time-based UI stays aligned.
   useEffect(() => {
     const tick = () => setNow(new Date());
     const msToNextMinute =
@@ -471,7 +472,7 @@ export default function Planner() {
     };
   }, []);
 
-  /* ---------- CLOCKIN TOAST LOGIC ---------- */
+  // Finds the next upcoming event and shows a single clock-in toast within 30 minutes of its start time.
   useEffect(() => {
     if (!events || events.length === 0) {
       setClockInEvent(null);
@@ -509,8 +510,7 @@ export default function Planner() {
     const nextStart = startDateTime(next).getTime();
     const diffMin = (nextStart - nowMs) / 60000;
 
-    // Show ONLY if the next event starts within the next 30 minutes.
-    // Only pop for that next event (don't auto-cycle to later ones).
+    // The toast only appears for the immediate next event and does not auto-cycle forward.
     if (diffMin >= 0 && diffMin <= 30) {
       if (
         shownClockInId === next.id ||
@@ -525,7 +525,6 @@ export default function Planner() {
       return;
     }
 
-    // If a toast is open but the event ended, clear it.
     if (clockInEvent) {
       const endMs = endDateTime(clockInEvent).getTime();
       if (nowMs > endMs) setClockInEvent(null);
@@ -540,6 +539,7 @@ export default function Planner() {
 
   const [nowLineStyle, setNowLineStyle] = useState(null);
 
+  // Positions the current-time line within today's column for the visible week.
   useEffect(() => {
     if (!gridRef.current || !layout) return;
     if (!isCurrentWeek) {
@@ -583,7 +583,6 @@ export default function Planner() {
     });
   }, [now, isCurrentWeek, todayIndex, layout]);
 
-  /* ---------- form fields ---------- */
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState("schedule");
   const [dateStr, setDateStr] = useState(() =>
@@ -593,7 +592,6 @@ export default function Planner() {
   const [endTime, setEndTime] = useState("10:00");
   const [desc, setDesc] = useState("");
 
-  // recurrence (single unified mode: days + everyWeeks + until)
   const [repeatEnabled, setRepeatEnabled] = useState(false);
   const [repeatEveryWeeks, setRepeatEveryWeeks] = useState(2);
   const [repeatUntil, setRepeatUntil] = useState(() =>
@@ -633,7 +631,7 @@ export default function Planner() {
 
     setRepeatEnabled(true);
 
-    // clamp to 1/2 because UI only offers those
+    // The UI only supports weekly or every-other-week recurrence.
     const ew = Number(rec.everyWeeks);
     setRepeatEveryWeeks(ew === 1 ? 1 : 2);
 
@@ -708,13 +706,13 @@ export default function Planner() {
     setEditingId(null);
   }
 
-  // ✅ FIX: always snap to default on kind switch
+  // Resets the modal color to the default schedule color when switching event type.
   function setKindToSchedule() {
     setKind("schedule");
     setColor(DEFAULT_COLOR_SCHEDULE);
   }
 
-  // ✅ FIX: always snap to default on kind switch
+  // Resets the modal color to the default task color when switching event type.
   function setKindToTask() {
     setKind("task");
     setColor(DEFAULT_COLOR_TASK);
@@ -759,7 +757,7 @@ export default function Planner() {
         setEvents(normalized);
       }
     } catch {
-      // ignore
+      // Ignore refetch errors here and preserve the current UI state.
     }
 
     if (dateISO) {
@@ -768,7 +766,7 @@ export default function Planner() {
     }
   }
 
-  // unified recurrence generator: selected weekdays + everyWeeks (1 or 2) + until
+  // Creates repeated occurrences using the selected weekdays and weekly interval.
   async function createOccurrencesFrom(
     basePayload,
     startDateISO,
@@ -804,7 +802,7 @@ export default function Planner() {
 
     const interval = Math.max(1, Number(everyWeeks) || 1);
 
-    // Anchor week start to make "every other week" stable
+    // Anchoring by week start keeps every-other-week patterns consistent.
     const startWeek = startOfWeek(startDate);
 
     let cursor = new Date(startDate);
@@ -1013,6 +1011,7 @@ export default function Planner() {
     }
   }
 
+  // Calculates absolute positioning for an event block inside the weekly grid.
   function getEventStyle(ev) {
     if (!layout || !gridRef.current) return { display: "none" };
 
@@ -1061,6 +1060,7 @@ export default function Planner() {
     return base;
   }
 
+  // Places the event popover beside the selected event while keeping it inside the grid.
   function getPopoverStyle(ev) {
     if (!gridRef.current) return null;
     const s = getEventStyle(ev);
@@ -1495,11 +1495,9 @@ export default function Planner() {
                     const checked = e.target.checked;
                     setRepeatEnabled(checked);
 
-                    // when turning on, default to the selected date's weekday
                     if (checked)
                       setRepeatDaysDefaultForDate(dateStr);
 
-                    // when turning off, clear series link
                     if (!checked) setSeriesId(null);
                   }}
                 />

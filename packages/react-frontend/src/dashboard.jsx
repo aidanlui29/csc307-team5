@@ -8,7 +8,12 @@ import React, {
 import { useNavigate } from "react-router-dom";
 import { authHeaders } from "./auth";
 import "./dashboard.css";
-import { Users, UserCheck, Search } from "lucide-react";
+import {
+  CalendarCheck2,
+  CheckCircle2,
+  Search,
+  ListTodo
+} from "lucide-react";
 
 const DEFAULT_COLOR = "#9ca3af";
 
@@ -89,7 +94,6 @@ export default function Dashboard() {
     }
   }
 
-  // -------- Focus timer --------
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusMode, setFocusMode] = useState("work");
 
@@ -166,6 +170,7 @@ export default function Dashboard() {
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   }
 
+  // Runs the focus timer countdown while the timer is active.
   useEffect(() => {
     if (!isRunning) return;
 
@@ -188,7 +193,7 @@ export default function Dashboard() {
     };
   }, [isRunning]);
 
-  // Load planners
+  // Loads all planners for the authenticated user.
   useEffect(() => {
     let cancelled = false;
 
@@ -219,7 +224,7 @@ export default function Dashboard() {
     };
   }, [navigate]);
 
-  // Load events
+  // Loads events for each planner and groups them by planner id.
   useEffect(() => {
     let cancelled = false;
 
@@ -270,6 +275,7 @@ export default function Dashboard() {
     };
   }, [planners, navigate]);
 
+  // Flattens planner events into one list while preserving planner metadata for display.
   const allEvents = useMemo(() => {
     const out = [];
     for (const p of planners) {
@@ -297,6 +303,7 @@ export default function Dashboard() {
     [allEvents]
   );
 
+  // Builds summary counts used by the dashboard stat cards.
   const { todayOpenCount, weekOpenTotal, weekCompleted } =
     useMemo(() => {
       const now = new Date();
@@ -330,8 +337,8 @@ export default function Dashboard() {
   const weekStart = useMemo(() => startOfWeek(now), [now]);
   const weekEnd = useMemo(() => endOfWeek(now), [now]);
 
+  // Applies scope filtering, search filtering, and sorting to the task list.
   const filteredTasks = useMemo(() => {
-    // 1) scope filtering (today/week/etc)
     let scoped = tasks;
 
     if (scope === "today") {
@@ -348,7 +355,6 @@ export default function Dashboard() {
       );
     }
 
-    // 2) text query filtering
     const q = query.trim().toLowerCase();
     const base = q
       ? scoped.filter((t) =>
@@ -356,7 +362,6 @@ export default function Dashboard() {
         )
       : scoped.slice();
 
-    // 3) sorting
     const priorityRank = { high: 0, medium: 1, low: 2 };
     base.sort((a, b) => {
       if (sortBy === "date")
@@ -403,7 +408,7 @@ export default function Dashboard() {
             onKeyDown={(e) => handleScopeKeyDown(e, "today")}
             title="Show only today's tasks">
             <div className="dashStatIcon">
-              <UserCheck size={28} />
+              <CalendarCheck2 size={28} />
             </div>
             <div>
               <div className="dashStatLabel">Today Tasks</div>
@@ -422,7 +427,7 @@ export default function Dashboard() {
             onKeyDown={(e) => handleScopeKeyDown(e, "week")}
             title="Show only this week's tasks">
             <div className="dashStatIcon">
-              <Users size={28} />
+              <ListTodo size={28} />
             </div>
             <div>
               <div className="dashStatLabel">
@@ -445,7 +450,7 @@ export default function Dashboard() {
             }
             title="Show only completed tasks from this week">
             <div className="dashStatIcon">
-              <Users size={28} />
+              <CheckCircle2 size={28} />
             </div>
             <div>
               <div className="dashStatLabel">

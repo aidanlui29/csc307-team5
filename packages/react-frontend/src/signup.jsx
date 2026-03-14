@@ -10,6 +10,7 @@ export default function Signup() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Creates a new account, stores the returned token, and redirects to the planner page.
   async function handleSignup(e) {
     e.preventDefault();
     setError("");

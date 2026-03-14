@@ -81,15 +81,13 @@ export default function WeeklyFeedback() {
 
   const isCurrentWeek = weekStartStr === thisWeekStartStr;
 
-  // ============================
-  // Reflection (MongoDB)
-  // ============================
   const [reflection, setReflection] = useState("");
   const [reflectionLoading, setReflectionLoading] =
     useState(false);
   const didLoadRef = useRef(false);
   const saveTimerRef = useRef(null);
 
+  // Loads the saved reflection text for the selected week.
   useEffect(() => {
     let cancelled = false;
 
@@ -128,7 +126,7 @@ export default function WeeklyFeedback() {
     };
   }, [weekStartStr, navigate]);
 
-  // Debounced autosave
+  // Autosaves reflection text after the user stops typing briefly.
   useEffect(() => {
     if (!didLoadRef.current) return;
 
@@ -146,7 +144,7 @@ export default function WeeklyFeedback() {
           body: JSON.stringify({ text: reflection })
         });
       } catch {
-        // ignore
+        // Ignore autosave errors to avoid interrupting the user.
       }
     }, 600);
 
@@ -156,9 +154,7 @@ export default function WeeklyFeedback() {
     };
   }, [reflection, weekStartStr]);
 
-  // ============================
-  // Load planners
-  // ============================
+  // Loads all planners for the authenticated user.
   useEffect(() => {
     let cancelled = false;
 
@@ -191,7 +187,7 @@ export default function WeeklyFeedback() {
     };
   }, [navigate]);
 
-  // Load week events
+  // Loads events for all planners within the selected week.
   useEffect(() => {
     let cancelled = false;
 
@@ -240,9 +236,7 @@ export default function WeeklyFeedback() {
     };
   }, [planners, weekStartStr, weekEnd]);
 
-  // ============================
-  // Weekly Report
-  // ============================
+  // Builds weekly report statistics from completed and incomplete task events.
   const report = useMemo(() => {
     const all = [];
     for (const p of planners) {

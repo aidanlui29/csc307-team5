@@ -12,11 +12,13 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Authenticates the user, verifies the returned token, and stores it for protected routes.
   async function handleLogin(e) {
     e.preventDefault();
     setError("");
     setLoading(true);
 
+    // Clear any previous session before attempting a new login.
     clearToken();
 
     try {
@@ -38,6 +40,7 @@ export default function Login() {
         return;
       }
 
+      // Verifies that the token is valid before saving it locally.
       const verifyRes = await fetch(AUTH_ME_URL, {
         headers: { Authorization: `Bearer ${data.token}` }
       });
