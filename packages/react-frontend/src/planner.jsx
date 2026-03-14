@@ -85,12 +85,11 @@ function minutesToLabel(mins) {
   return `${h12}:${pad2(m)}${ampm}`;
 }
 
-// Used only for one-time migration from the original localStorage version.
 function storageKey(id) {
   return `plannerEvents_v1_${id || "default"}`;
 }
 
-// Normalizes backend event identifiers so the UI can always use ev.id.
+// Normalizes backend event ids so the UI can always read events through ev.id.
 function normalizeEvent(raw) {
   if (!raw || typeof raw !== "object") return null;
   const id = raw.id ?? raw._id ?? raw.eventId ?? raw._eventId;
@@ -98,7 +97,7 @@ function normalizeEvent(raw) {
   return { ...raw, id };
 }
 
-// Converts a hex color into a translucent background tint for event cards.
+// Converts a hex color into a translucent background color for event cards.
 function hexToRgba(hex, alpha) {
   if (typeof hex !== "string") return null;
   const h = hex.trim().replace("#", "");
@@ -119,7 +118,7 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// Generates a stable-enough id for grouping repeated events into a series.
+// Creates a shared recurrence series id so repeated occurrences can stay grouped.
 function makeSeriesId() {
   return `series_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
@@ -170,10 +169,10 @@ export default function Planner() {
     useState(() => new Set());
   const [shownClockInId, setShownClockInId] = useState(null);
 
-  // Loads planner events from the API and migrates legacy localStorage data once.
   useEffect(() => {
     let cancelled = false;
 
+    // Loads planner events from the backend and performs a one-time localStorage migration if needed.
     async function fetchEvents() {
       setLoadingEvents(true);
       setPageError("");
@@ -215,7 +214,6 @@ export default function Planner() {
             legacy = [];
           }
 
-          // Migration only runs when the server does not already have events.
           if (legacy.length > 0 && serverEvents.length === 0) {
             for (const ev of legacy) {
               if (!ev?.title || !ev?.date || !ev?.kind)
@@ -430,7 +428,6 @@ export default function Planner() {
   const gridRef = useRef(null);
   const [layout, setLayout] = useState(null);
 
-  // Reads rendered grid measurements so events and the current-time line can be positioned accurately.
   useEffect(() => {
     const computeLayout = () => {
       if (!gridRef.current) return;
@@ -452,7 +449,7 @@ export default function Planner() {
 
   const nowIntervalRef = useRef(null);
 
-  // Updates the current time once per minute so time-based UI stays aligned.
+  // Updates the current time every minute so the planner line stays in sync.
   useEffect(() => {
     const tick = () => setNow(new Date());
     const msToNextMinute =
@@ -472,7 +469,7 @@ export default function Planner() {
     };
   }, []);
 
-  // Finds the next upcoming event and shows a single clock-in toast within 30 minutes of its start time.
+  // Finds the next upcoming event and shows a single clock-in reminder within 30 minutes of its start time.
   useEffect(() => {
     if (!events || events.length === 0) {
       setClockInEvent(null);
@@ -510,7 +507,6 @@ export default function Planner() {
     const nextStart = startDateTime(next).getTime();
     const diffMin = (nextStart - nowMs) / 60000;
 
-    // The toast only appears for the immediate next event and does not auto-cycle forward.
     if (diffMin >= 0 && diffMin <= 30) {
       if (
         shownClockInId === next.id ||
@@ -539,7 +535,7 @@ export default function Planner() {
 
   const [nowLineStyle, setNowLineStyle] = useState(null);
 
-  // Positions the current-time line within today's column for the visible week.
+  // Positions the current-time line inside today's column for the visible week.
   useEffect(() => {
     if (!gridRef.current || !layout) return;
     if (!isCurrentWeek) {
@@ -616,6 +612,7 @@ export default function Planner() {
     setRepeatDays(arr);
   }
 
+  // Loads recurrence settings from the selected event back into the modal form.
   function applyRecurrenceFromEvent(ev) {
     const rec = ev?.recurrence;
     if (!rec || typeof rec !== "object") {
@@ -630,11 +627,8 @@ export default function Planner() {
     }
 
     setRepeatEnabled(true);
-
-    // The UI only supports weekly or every-other-week recurrence.
     const ew = Number(rec.everyWeeks);
     setRepeatEveryWeeks(ew === 1 ? 1 : 2);
-
     setRepeatUntil(rec.until || ev.date);
 
     if (Array.isArray(rec.days) && rec.days.length === 7) {
@@ -706,18 +700,17 @@ export default function Planner() {
     setEditingId(null);
   }
 
-  // Resets the modal color to the default schedule color when switching event type.
   function setKindToSchedule() {
     setKind("schedule");
     setColor(DEFAULT_COLOR_SCHEDULE);
   }
 
-  // Resets the modal color to the default task color when switching event type.
   function setKindToTask() {
     setKind("task");
     setColor(DEFAULT_COLOR_TASK);
   }
 
+  // Creates one event occurrence in the backend.
   async function postOneEvent(payloadForDate) {
     const res = await fetch(`/api/planners/${id}/events`, {
       method: "POST",
@@ -743,6 +736,7 @@ export default function Planner() {
     return { ok: true };
   }
 
+  // Reloads planner events after recurrence changes and keeps the calendar focused on the edited week.
   async function refetchEventsAndShowWeek(dateISO) {
     try {
       const res = await fetch(`/api/planners/${id}/events`, {
@@ -756,9 +750,7 @@ export default function Planner() {
           .filter(Boolean);
         setEvents(normalized);
       }
-    } catch {
-      // Ignore refetch errors here and preserve the current UI state.
-    }
+    } catch {}
 
     if (dateISO) {
       const d = new Date(`${dateISO}T00:00:00`);
@@ -766,7 +758,7 @@ export default function Planner() {
     }
   }
 
-  // Creates repeated occurrences using the selected weekdays and weekly interval.
+  // Generates recurring event copies based on the selected days, end date, and weekly interval.
   async function createOccurrencesFrom(
     basePayload,
     startDateISO,
@@ -801,8 +793,6 @@ export default function Planner() {
       throw new Error("Pick at least one day to repeat on.");
 
     const interval = Math.max(1, Number(everyWeeks) || 1);
-
-    // Anchoring by week start keeps every-other-week patterns consistent.
     const startWeek = startOfWeek(startDate);
 
     let cursor = new Date(startDate);
@@ -860,6 +850,7 @@ export default function Planner() {
 
     setSavingEvent(true);
     try {
+      // Base payload for the event being directly created or edited.
       const basePayload = {
         title: title.trim(),
         kind,
@@ -870,10 +861,18 @@ export default function Planner() {
         color: color || null
       };
 
+      // Task-only fields belong to the specific event instance being saved.
       if (kind === "task") {
         basePayload.priority = priority;
         basePayload.completed = completed;
       }
+
+      // Recurring task copies should keep the same priority, but they should not inherit
+      // the completed state of the edited task. Each new occurrence starts incomplete.
+      const recurrencePayload = {
+        ...basePayload,
+        ...(kind === "task" ? { completed: false } : {})
+      };
 
       const seriesIdToUse = wantsRecurrence
         ? seriesId || makeSeriesId()
@@ -887,6 +886,7 @@ export default function Planner() {
           }
         : null;
 
+      // Updating one recurring event keeps that event's own values, then creates future copies separately.
       if (editingId) {
         const res = await fetch(`/api/events/${editingId}`, {
           method: "PUT",
@@ -921,7 +921,7 @@ export default function Planner() {
 
         if (wantsRecurrence) {
           await createOccurrencesFrom(
-            basePayload,
+            recurrencePayload,
             dateStr,
             repeatUntil,
             {
@@ -939,9 +939,10 @@ export default function Planner() {
           setAnchorDate(new Date(`${dateStr}T00:00:00`));
         }
       } else {
+        // Creating a new recurring event generates each occurrence as its own event in the same series.
         if (wantsRecurrence) {
           await createOccurrencesFrom(
-            basePayload,
+            recurrencePayload,
             dateStr,
             repeatUntil,
             {
@@ -1011,7 +1012,7 @@ export default function Planner() {
     }
   }
 
-  // Calculates absolute positioning for an event block inside the weekly grid.
+  // Calculates absolute positioning for an event block inside the weekly planner grid.
   function getEventStyle(ev) {
     if (!layout || !gridRef.current) return { display: "none" };
 
@@ -1060,7 +1061,7 @@ export default function Planner() {
     return base;
   }
 
-  // Places the event popover beside the selected event while keeping it inside the grid.
+  // Positions the event popover next to the selected event while keeping it inside the planner area.
   function getPopoverStyle(ev) {
     if (!gridRef.current) return null;
     const s = getEventStyle(ev);
