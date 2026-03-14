@@ -18,7 +18,9 @@ productivity habits.
 
 ---
 
-## UI Prototype & UML Diagram
+## Links
+
+[Live Application](https://salmon-field-0381bb210.1.azurestaticapps.net)  
 
 [Figma UI Prototype](https://www.figma.com/design/Hc103T9Y2faSacd6bU2AbM/Planner?node-id=0-1&t=ORc1qbkaAyo2lqQT-1)
 Last Updated: 2/15/2026
@@ -45,11 +47,6 @@ and backend packages.
 - `docs/`  
   Architecture documentation and design artifacts for this
   project.
-
-### UML Class Diagram
-
-The UML Class Diagram is located in: `docs/uml/`  
-Last Updated: <DATE>
 
 ## Development Environment Setup
 
@@ -85,7 +82,7 @@ Create a `.env` file inside `packages/backend`:
 ```bash
 PORT=5000
 MONGO_URI=<your-mongodb-connection-string>
-JWT_SECRET=<your-secret-key>
+TOKEN_SECRET=<your-secret-key>
 ```
 
 The frontend uses an `.env.production` file inside
