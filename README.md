@@ -22,6 +22,10 @@ productivity habits.
 
 [Live Application](https://salmon-field-0381bb210.1.azurestaticapps.net)  
 
+[Demo Video](<video-link>)
+
+[GitHub Sprint Board](https://github.com/users/jeman618/projects/1)
+
 [Figma UI Prototype](https://www.figma.com/design/Hc103T9Y2faSacd6bU2AbM/Planner?node-id=0-1&t=ORc1qbkaAyo2lqQT-1)
 Last Updated: 2/15/2026
 
