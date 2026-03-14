@@ -750,7 +750,9 @@ export default function Planner() {
           .filter(Boolean);
         setEvents(normalized);
       }
-    } catch {}
+    } catch {
+      //ignore
+    }
 
     if (dateISO) {
       const d = new Date(`${dateISO}T00:00:00`);
