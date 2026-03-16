@@ -334,6 +334,10 @@ body {
   color: #1b0833;
 }
 
+.plannerModal__pill.is-active {
+  background: #cfcfcf;
+}
+
 .plannerModal__field {
   display: flex;
   flex-direction: column;
